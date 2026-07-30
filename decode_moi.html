@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#020D20">
+<title>Décode-Moi — by Dee Kréations</title>
+<link rel="icon" type="image/png" href="assets/dee-icon.png">
+<link rel="apple-touch-icon" href="assets/dee-icon.png">
+<style>
+
+/* Polices de la charte Dee Kréations.
+   Aucun fichier de police n’est redistribué : le navigateur utilise les polices
+   lorsqu’elles sont installées sur l’appareil, puis une police système de secours. */
+@font-face{
+  font-family:"Dee Seasons";
+  src:local("The Seasons"),local("The Seasons Regular"),local("The Seasons Bold");
+  font-style:normal;
+  font-weight:400 700;
+  font-display:swap;
+}
+@font-face{
+  font-family:"Dee Tangerine";
+  src:local("Tangerine Bold"),local("Tangerine");
+  font-style:normal;
+  font-weight:700;
+  font-display:swap;
+}
+
+:root{
+  --bg:#071322;
+  --nav:#0c1428;
+  --surface:#0c1629;
+  --card:#172136;
+  --card-border:#2b3850;
+  --line:#253149;
+  --cyan:#42cbd3;
+  --cyan-bright:#20d4e3;
+  --orange:#f28a2b;
+  --white:#f5f7fb;
+  --muted:#9fb6dc;
+  --muted-soft:#8497b8;
+  --danger:#d86658;
+  --heading:"Dee Seasons",Georgia,"Times New Roman",serif;
+  --script:"Dee Tangerine","Segoe Script","Brush Script MT",cursive;
+  --body:"Dee Seasons",Georgia,"Times New Roman",serif;
+  --sans:"Segoe UI",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{
+  margin:0;min-height:100vh;color:var(--white);background:var(--bg);
+  font-family:var(--body);font-size:17px;
+}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+h1,h2,h3{font-family:var(--body);letter-spacing:0}
+.hidden{display:none!important}
+.shell{width:min(1024px,calc(100% - 24px));margin:0 auto;padding:16px 0 42px}
+.topbar{
+  height:62px;display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:0 0 0 0;margin:0;border:0;border-bottom:1px solid #202b42;border-radius:0;
+  background:var(--nav);
+}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.level-badge{
+  width:42px;height:42px;border-radius:13px;display:grid;place-items:center;
+  background:var(--cyan);color:#031320;font-family:var(--sans);font-size:14px;font-weight:900;
+  box-shadow:0 7px 18px rgba(46,202,211,.16)
+}
+.brand-copy{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.header-title{font-family:var(--script);font-size:29px;font-weight:700;line-height:.82;color:var(--orange);white-space:nowrap}
+.brand small{font-family:var(--sans);display:block;color:#7fa5d4;margin-top:6px;font-size:11px;line-height:1}
+.ghost,.secondary,.danger,.primary{
+  min-height:39px;border-radius:11px;padding:9px 14px;font-family:var(--body);font-size:15px;font-weight:700;
+  transition:transform .14s ease,border-color .14s ease,background .14s ease;box-shadow:none
+}
+.ghost:hover,.secondary:hover,.danger:hover,.primary:hover{transform:translateY(-1px)}
+.ghost,.secondary{border:1px solid #303b52;background:#1a2235;color:var(--white)}
+.ghost:hover,.secondary:hover{border-color:#45536f;background:#202a40}
+.primary{border:1px solid rgba(255,255,255,.12);background:var(--cyan);color:#031522}
+.primary:hover{background:#55d4da}
+.danger{border:1px solid rgba(216,102,88,.50);background:rgba(216,102,88,.12);color:#ffdcd7}
+.hero,.panel{border:1px solid var(--line);border-radius:22px;background:var(--surface);box-shadow:none}
+.hero{
+  position:relative;overflow:hidden;min-height:389px;padding:30px 28px;margin-top:0;
+  display:block
+}
+.hero:before{display:none}
+.hero:after{
+  content:"";position:absolute;width:148px;height:148px;border-radius:50%;right:-8px;top:-20px;
+  background:#0d2a3e;opacity:.72;pointer-events:none
+}
+.hero>*{position:relative;z-index:1}
+.hero-butterfly,.hero-signature{display:none!important}
+.kicker{font-family:var(--sans);font-size:11px;line-height:1.2;letter-spacing:.14em;text-transform:uppercase;font-weight:900;color:var(--cyan-bright)}
+.home-title{
+  margin:10px 0 23px;font-family:var(--heading);font-style:italic;font-weight:600;
+  font-size:50px;line-height:1;color:var(--white)
+}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0;max-width:none}
+.mode-card,.card{
+  position:relative;overflow:hidden;border:1px solid var(--card-border);border-radius:19px;padding:18px;
+  background:var(--card)
+}
+.mode-card:before{display:none}
+.mode-card h3,.card h3{margin:0 0 12px;font-family:var(--body);font-size:18px;line-height:1.2;font-weight:700;color:var(--white)}
+.mode-card p{min-height:49px;margin:0 0 16px;color:var(--muted);line-height:1.45;font-size:15px}
+.home-help{margin-top:12px}
+.field{display:grid;gap:7px;margin:12px 0}
+label{font-family:var(--body);font-weight:700;font-size:15px;color:var(--white)}
+input,select,textarea{
+  width:100%;border:1px solid var(--card-border);border-radius:11px;padding:11px 12px;
+  background:#0a1324;color:var(--white);outline:none
+}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(66,203,211,.11)}
+.panel{padding:22px;margin-top:16px}
+.panel>h2,.panel h2{color:var(--white)}
+.dash-head{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{border-radius:999px;padding:6px 10px;font-family:var(--sans);font-size:12px;font-weight:700;border:1px solid #31415a;background:#101d31;color:#cae8f3}
+.room-code{font-family:var(--heading);font-size:25px;letter-spacing:.16em;font-weight:700;color:var(--orange)}
+.room-tools{display:flex;align-items:center;justify-content:flex-end;gap:10px}
+.manage-dot{width:36px;height:36px;padding:0;border-radius:10px;border:1px solid #303b52;background:#151f32;color:#aab8d0;font-weight:900;font-size:16px;letter-spacing:.04em}
+.manage-dot:hover{color:var(--white);border-color:#4a5871;transform:translateY(-1px)}
+.profile-pill{cursor:pointer}
+.action-row{display:flex;gap:9px;flex-wrap:wrap}.action-row>*{flex:0 0 auto}
+.progress{height:10px;border:1px solid var(--line);background:#07101e;border-radius:999px;overflow:hidden;margin-top:13px}
+.progress>div{height:100%;width:0;background:var(--cyan);transition:width .3s}
+.muted{color:var(--muted);line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.level{border:1px solid var(--card-border);border-radius:18px;padding:17px;background:var(--card);min-height:245px;display:flex;flex-direction:column;transition:transform .16s ease,border-color .16s ease}
+.level:not(.locked):hover{transform:translateY(-2px);border-color:#43516d}
+.level.locked{opacity:.46;filter:saturate(.55)}
+.level.done{border-color:rgba(66,203,211,.65)}
+.level.remote{box-shadow:inset 0 3px 0 var(--cyan)}
+.level.together{box-shadow:inset 0 3px 0 #9677ba}
+.num{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-family:var(--sans);font-size:14px;font-weight:900;color:#041523;background:var(--cyan)}
+.level.done .num{background:#79d9de}
+.tag{margin-top:13px;font-family:var(--sans);font-size:10px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:var(--cyan-bright)}
+.level.together .tag{color:#c4a8e6}
+.level h3{margin:7px 0;font-family:var(--body);font-size:21px;color:var(--white)}
+.level p{color:var(--muted);line-height:1.45;margin:0 0 13px;font-size:15px}
+.level button{margin-top:auto}
+.lock-note{margin-top:auto;color:var(--muted-soft);font-size:13px;line-height:1.45}
+.reward-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:13px}
+.reward{border:1px solid var(--card-border);border-radius:17px;padding:16px;background:var(--card)}
+.reward.locked{opacity:.46}.reward.chosen{border-color:rgba(66,203,211,.58)}
+.reward h3{margin:10px 0 6px;color:var(--white);font-size:20px}.reward p{color:var(--muted);font-size:14px;line-height:1.45}
+.badge{display:inline-flex;border-radius:999px;padding:5px 9px;font-family:var(--sans);font-size:10px;font-weight:800;color:#dffcff;border:1px solid rgba(66,203,211,.38);background:rgba(66,203,211,.09)}
+.notice,.success,.error,.offline,.hintbox,.searchbox{margin:14px 0;padding:12px 14px;border-radius:13px;line-height:1.5}
+.notice{border:1px solid #42516c;background:#151f33;color:#dce7f7}
+.success{border:1px solid rgba(66,203,211,.42);background:rgba(66,203,211,.09);color:#d9fbff}
+.error{border:1px solid rgba(216,102,88,.45);background:rgba(216,102,88,.09);color:#ffe0dc}
+.offline{border:1px solid #3e4960;background:#121b2e;color:#d8e1ee}
+.hintbox{border:1px solid rgba(66,203,211,.42);background:rgba(66,203,211,.08);color:#d9fbff}
+.searchbox{border:1px solid rgba(242,138,43,.42);background:rgba(242,138,43,.08);color:#ffe3c7}
+.timer{text-align:center;font-family:var(--heading);font-size:35px;font-weight:700;letter-spacing:.08em;margin:13px 0;color:var(--orange)}
+.modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(2,8,18,.84)}
+.modal-box{width:min(760px,100%);max-height:91vh;overflow:auto;border:1px solid var(--card-border);border-radius:21px;padding:23px;background:var(--surface);box-shadow:0 24px 70px rgba(0,0,0,.48)}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.modal-head h2{margin:0;color:var(--white);font-size:29px}
+.close{width:37px;height:37px;border-radius:10px;border:1px solid #303b52;background:#151f32;color:var(--white);font-size:20px}
+.code-box{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:15px;word-break:break-all;border:1px dashed #53627c;border-radius:12px;padding:12px;background:#07101e;color:#dffcff}
+hr{border:0;border-top:1px solid var(--line);margin:19px 0}
+.footer{color:var(--muted-soft);font-family:var(--sans);font-size:11px;text-align:center;line-height:1.45;margin-top:18px}
+.dee-footer{display:none!important}
+@media(max-width:950px){.grid{grid-template-columns:repeat(2,1fr)}.reward-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:750px){.mode-grid,.grid,.reward-grid{grid-template-columns:1fr}.dash-head{grid-template-columns:1fr}.hero{min-height:auto}.mode-card p{min-height:auto}}
+@media(max-width:540px){
+ .shell{width:min(100% - 14px,1024px);padding-top:8px}.topbar{height:60px}.level-badge{width:40px;height:40px}.header-title{font-size:27px}
+ .hero{padding:24px 18px}.home-title{font-size:42px;margin-bottom:20px}.action-row>*{flex:1 1 145px}.room-tools{justify-content:flex-start}
+}
+
+</style>
+</head>
+<body>
+<div class="shell">
+<header class="topbar">
+  <div class="brand">
+    <div class="level-badge" aria-label="12 défis">12</div>
+    <div class="brand-copy"><div class="header-title">Décode-Moi</div><small>by Dee Kréations</small></div>
+  </div>
+  <button class="ghost" id="rulesBtn">Règles</button>
+</header>
+
+<section class="hero" id="home">
+  <div class="kicker">Le jeu commence ici</div>
+  <h1 class="home-title">Décode-Moi</h1>
+  <div class="mode-grid">
+    <article class="mode-card"><h3>Créer le coffret</h3><p>Choisis ton rôle, donne les prénoms et reçois le premier code.</p><button class="primary" id="createBtn">Créer</button></article>
+    <article class="mode-card"><h3>J’ai reçu un code</h3><p>Colle le code reçu, ou ouvre directement le lien envoyé.</p><button class="secondary" id="joinBtn">Entrer le code</button></article>
+  </div>
+  <button class="secondary home-help" id="helpRequestBtn">Répondre à une demande d’aide</button>
+</section>
+
+<main id="mainGame" class="hidden">
+<section class="panel">
+  <div class="dash-head">
+    <div>
+      <div class="kicker">Partie principale</div>
+      <h2 style="margin:5px 0 7px" id="teamTitle"></h2>
+      <div class="pills"><span class="pill" id="playersPill"></span><span class="pill profile-pill" id="rolePill" title="Changer de profil"></span></div>
+    </div>
+    <div class="room-tools"><div><div class="muted" style="font-size:.78rem">CODE RELAIS</div><div class="room-code" id="roomCode"></div></div><button class="manage-dot" id="manageBtn" aria-label="Gérer la partie" title="Partie et profils">•••</button></div>
+  </div>
+  <div class="action-row" style="margin-top:15px">
+    <button class="primary" id="inviteBtn">Envoyer un relais</button>
+    <button class="secondary" id="copyCodeBtn">Copier le code</button>
+    <button class="secondary" id="shareAppBtn">Partager le jeu</button>
+  </div>
+  <div class="progress"><div id="progressBar"></div></div>
+  <div class="muted" id="progressText" style="margin-top:7px;font-size:.86rem"></div>
+  
+</section>
+
+<section class="panel">
+  <div class="kicker">Parcours en cours</div>
+  <h2 style="margin:6px 0 0">Les défis à décoder</h2>
+  <p class="muted" style="margin:6px 0 0">Chaque niveau validé débloque le suivant. Le parcours pourra accueillir de nouveaux défis.</p>
+  <div class="grid" id="levelGrid"></div>
+</section>
+
+<section class="panel">
+  <div class="kicker">Récompenses</div>
+  <h2 style="margin:6px 0 3px">Les paliers débloqués</h2>
+  
+  <div class="reward-grid" id="rewardGrid"></div>
+</section>
+<p class="footer">Les codes de relais ne contiennent aucun nom complet. La progression reste sur le téléphone principal.</p>
+<footer class="dee-footer">
+  <img src="assets/dee-monogram.png" alt="Dee Kréations">
+  <div><strong>Dee Kréations</strong><span>L’élégance de l’idée, la force de la création.</span></div>
+</footer>
+</main>
+
+<main id="parentGame" class="hidden">
+<section class="panel">
+  <div class="kicker">Relais</div>
+  <h2 style="margin:6px 0 4px">J’ai reçu un code</h2>
+  <p class="muted">Entre le code relais et le numéro reçu.</p>
+  <div class="field"><label for="parentRoom">Code relais</label><input id="parentRoom" maxlength="6" placeholder="Ex. A7K2P9"></div>
+  <div class="field"><label for="parentStage">Niveau reçu</label>
+    <select id="parentStage">
+      <option value="">Choisir…</option>
+      <option value="1">Niveau 1</option><option value="3">Niveau 3</option><option value="5">Niveau 5</option>
+      <option value="7">Niveau 7</option><option value="9">Niveau 9</option><option value="11">Niveau 11</option>
+    </select>
+  </div>
+  <button class="primary" id="openRelayBtn">Ouvrir</button>
+  <button class="ghost" style="margin-left:6px" id="backHomeBtn">Retour</button>
+</section>
+<footer class="dee-footer">
+  <img src="assets/dee-monogram.png" alt="Dee Kréations">
+  <div><strong>Dee Kréations</strong><span>L’élégance de l’idée, la force de la création.</span></div>
+</footer>
+</main>
+</div>
+
+<div class="modal hidden" id="modal"><div class="modal-box">
+  <div class="modal-head"><div><div class="kicker" id="modalTag"></div><h2 id="modalTitle"></h2></div><button class="close" id="closeModal">×</button></div>
+  <div id="modalBody"></div>
+</div></div>
+
+<script>
+const LEVELS=[
+ {mode:"remote",title:"Le nombre disparu",tag:"Relais",desc:"Une énigme de logique à résoudre sur deux appareils."},
+ {mode:"together",title:"La tour codée",tag:"Activité",desc:"Construire, observer et décoder ensemble."},
+ {mode:"remote",title:"La carte sans nom",tag:"Relais",desc:"Une question de culture générale à résoudre à distance."},
+ {mode:"together",title:"Les cinq objets",tag:"Activité",desc:"Une chasse aux objets à réaliser ensemble."},
+ {mode:"remote",title:"Le verbe masqué",tag:"Relais",desc:"Une question de français à résoudre sur deux appareils."},
+ {mode:"together",title:"Le pont impossible",tag:"Activité",desc:"Construire un passage avec peu de matériel."},
+ {mode:"remote",title:"La planète rouge",tag:"Relais",desc:"Une question scientifique à résoudre à distance."},
+ {mode:"together",title:"Le défi mémoire",tag:"Activité",desc:"Observer, cacher puis retrouver ensemble."},
+ {mode:"remote",title:"Le pourcentage secret",tag:"Relais",desc:"Une question de mathématiques à résoudre sur deux appareils."},
+ {mode:"together",title:"La piste extérieure",tag:"Activité",desc:"Une courte sortie avec trois éléments à repérer."},
+ {mode:"remote",title:"Le tableau célèbre",tag:"Relais",desc:"Une dernière question de culture générale à distance."},
+ {mode:"together",title:"Le défi final",tag:"Activité",desc:"Résoudre trois mini-énigmes et débloquer le dernier palier."}
+];
+const REMOTE_META={
+ 0:{question:"Quel nombre complète la suite : 5, 10, 20, 40, ?",salt:"R0",hashes:["16NFRW9"],hint:"Chaque nombre est le double du précédent.",research:"Cherchez ensemble comment reconnaître une suite où chaque nombre est multiplié par deux."},
+ 2:{question:"Quel est le plus grand océan du monde ?",salt:"R2",hashes:["1WAQ2A6","16TONEC"],hint:"Il borde notamment l’Asie, l’Océanie et les Amériques.",research:"Cherchez ensemble une carte du monde et comparez la taille des océans."},
+ 4:{question:"Dans « Nous partirons demain », quel est l’infinitif du verbe ?",salt:"R4",hashes:["07FHZJR"],hint:"Retire la terminaison du futur pour retrouver le verbe d’origine.",research:"Cherchez ensemble comment se forme le futur simple du verbe partir."},
+ 6:{question:"Quelle planète est surnommée la planète rouge ?",salt:"R6",hashes:["05EWLC2"],hint:"Elle porte le nom du dieu romain de la guerre.",research:"Cherchez ensemble les planètes du système solaire et leurs surnoms."},
+ 8:{question:"Combien font 15 % de 200 ?",salt:"R8",hashes:["01N9GZM"],hint:"10 % de 200 font 20 et 5 % font 10.",research:"Cherchez ensemble une méthode simple pour calculer un pourcentage."},
+ 10:{question:"Qui a peint La Joconde ?",salt:"R10",hashes:["0JIER17","07D99DD"],hint:"C’était un artiste et inventeur italien de la Renaissance.",research:"Cherchez ensemble le musée où se trouve La Joconde et le nom de son peintre."}
+};
+const PARENT_META={
+ 1:{question:"Quel nombre vient après 3, 6, 12, 24 ?",salt:"P1",hashes:["0JU9LNI"],hint:"Le nombre double à chaque étape.",research:"Cherchez ensemble la règle de cette suite."},
+ 3:{question:"Quelle est la capitale de l’Italie ?",salt:"P3",hashes:["0B0CMV1"],hint:"La ville abrite le Colisée.",research:"Cherchez ensemble une carte de l’Italie."},
+ 5:{question:"Quel est l’infinitif de « nous finirons » ?",salt:"P5",hashes:["0FNEGIO"],hint:"Retire la terminaison du futur.",research:"Cherchez ensemble la conjugaison de finir au futur."},
+ 7:{question:"Combien de planètes compte le système solaire ?",salt:"P7",hashes:["1A8QQX8","051V3ME"],hint:"Pluton est classée comme planète naine.",research:"Cherchez ensemble la liste des planètes."},
+ 9:{question:"Combien font 25 % de 80 ?",salt:"P9",hashes:["0S42GT4"],hint:"25 % représentent un quart.",research:"Cherchez ensemble comment calculer un quart de 80."},
+ 11:{question:"Dans quel pays se trouve Tokyo ?",salt:"P11",hashes:["1GSHCU7","1JFKCI6"],hint:"C’est un archipel d’Asie.",research:"Cherchez ensemble une carte de l’Asie."}
+};
+const FINAL_META=[
+ {salt:"F1",hashes:["1KT94J2"]},
+ {salt:"F2",hashes:["1EBP4UU"]},
+ {salt:"F3",hashes:["13VSUQT"]}
+];
+const PERSONAL_PROMPTS={
+ "Souvenir":["Quel souvenir te fait encore rire ?","Quel moment aimerais-tu revivre une fois ?"],
+ "Peur":["Quelle petite peur aimerais-tu réussir à dépasser ?","Qu’est-ce qui t’impressionne plus que tu ne le montres ?"],
+ "Rêve":["Quel projet aimerais-tu vraiment réaliser ?","Où aimerais-tu aller au moins une fois ?"],
+ "Regret":["Quelle petite chose aurais-tu aimé faire autrement ?","Quelle occasion manquée aimerais-tu retrouver ?"],
+ "Secret léger":["Quelle habitude amusante peu de personnes connaissent ?","Quel goût, film ou musique apprécies-tu sans toujours l’avouer ?"]
+};
+const REWARDS=[
+ {need:3,badge:"3 niveaux",title:"Pause duo",activities:["Goûter choisi par le jeune","Jeu de cartes ou de société","Petite balade","Préparer une boisson ou un dessert","Activité personnalisée"]},
+ {need:6,badge:"6 niveaux",title:"Sortie courte",activities:["Balade dans un parc","Déjeuner ou goûter à deux ou à trois","Médiathèque ou librairie","Terrain de sport ou activité gratuite","Activité personnalisée"]},
+ {need:9,badge:"9 niveaux",title:"Sortie choisie",activities:["Cinéma","Bowling ou mini-golf","Musée ou exposition","Restaurant simple","Grande promenade","Activité personnalisée"]},
+ {need:12,badge:"12 niveaux",title:"Grande récompense",activities:["Cinéma + repas","Journée dans un lieu choisi","Événement ou spectacle","Activité familiale spéciale","Projet personnalisé"]}
+];
+const STORE_KEY="decodeMoiStoreV5";
+const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
+const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
+const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),relayAnswers:{},rewards:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+
+function normalizeCompleted(values){
+ const result=Array(LEVELS.length).fill(false);
+ if(Array.isArray(values)) values.slice(0,LEVELS.length).forEach((v,i)=>result[i]=Boolean(v));
+ return result
+}
+function sanitizeGame(x={}){
+ const game={...structuredClone(defaultState),...x};
+ game.completed=normalizeCompleted(x.completed);
+ game.relayAnswers={...(x.relayAnswers||{})};
+ game.rewards={...(x.rewards||{})};
+ game.activeRole=x.activeRole==="parent"?"parent":"teen";
+ game.profileData={parent:{...emptyProfile(),...(x.profileData?.parent||{})},teen:{...emptyProfile(),...(x.profileData?.teen||{})}};
+ if(!x.profileData){
+  game.profileData.teen.localAnswers={...(x.localAnswers||{})};
+  game.profileData.teen.attempts={...(x.attempts||{})};
+  game.profileData.teen.hints={...(x.hints||{})};
+ }
+ return game
+}
+function loadStore(){
+ try{
+  const existing=JSON.parse(localStorage.getItem(STORE_KEY));
+  if(existing?.games)return existing;
+  for(const key of LEGACY_KEYS){
+   const legacy=JSON.parse(localStorage.getItem(key));
+   if(legacy){
+    const game=sanitizeGame(legacy);game.room=game.room||"LOCAL1";
+    const migrated={activeRoom:game.room,games:{[game.room]:game}};
+    localStorage.setItem(STORE_KEY,JSON.stringify(migrated));return migrated
+   }
+  }
+ }catch(e){}
+ return{activeRoom:"",games:{}}
+}
+let store=loadStore();
+let state=store.activeRoom&&store.games[store.activeRoom]?sanitizeGame(store.games[store.activeRoom]):structuredClone(defaultState);
+function save(){
+ if(!state.room)return;
+ state=sanitizeGame(state);store.games[state.room]=state;store.activeRoom=state.room;
+ localStorage.setItem(STORE_KEY,JSON.stringify(store))
+}
+function roleData(){
+ const role=state.activeRole==="parent"?"parent":"teen";
+ state.profileData=state.profileData||{parent:emptyProfile(),teen:emptyProfile()};
+ state.profileData[role]=state.profileData[role]||emptyProfile();return state.profileData[role]
+}
+function profileName(){return state.activeRole==="parent"?state.parentName:state.teen}
+function activateGame(room){
+ if(!store.games[room])return;
+ store.activeRoom=room;state=sanitizeGame(store.games[room]);localStorage.setItem(STORE_KEY,JSON.stringify(store));closeModal();showMain()
+}
+function deleteGame(room){
+ delete store.games[room];if(store.activeRoom===room)store.activeRoom=Object.keys(store.games)[0]||"";
+ localStorage.setItem(STORE_KEY,JSON.stringify(store));state=store.activeRoom?sanitizeGame(store.games[store.activeRoom]):structuredClone(defaultState);
+ closeModal();state.created?showMain():showHome()
+}
+function esc(v=""){return String(v).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function today(){return new Date().toISOString().slice(0,10)}
+function addDays(iso,n){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
+function fmt(iso){if(!iso)return"";return new Date(iso+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})}
+function randomRoom(){const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<6;i++)s+=chars[Math.floor(Math.random()*chars.length)];return s}
+function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36).toUpperCase().padStart(7,"0")}
+function encodeRelay(room,stage,payload){const data={r:room.toUpperCase(),s:Number(stage),p:payload,c:hash(room.toUpperCase()+"|"+stage+"|"+JSON.stringify(payload))};return btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+function decodeRelay(code,room,stage){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";const data=JSON.parse(decodeURIComponent(escape(atob(b))));const ok=data.r===room.toUpperCase()&&Number(data.s)===Number(stage)&&data.c===hash(room.toUpperCase()+"|"+stage+"|"+JSON.stringify(data.p));return ok?data.p:null}catch(e){return null}}
+
+const home=document.getElementById("home"),mainGame=document.getElementById("mainGame"),parentGame=document.getElementById("parentGame");
+const modal=document.getElementById("modal"),modalTitle=document.getElementById("modalTitle"),modalTag=document.getElementById("modalTag"),modalBody=document.getElementById("modalBody");
+function openModal(title,tag,body){modalTitle.textContent=title;modalTag.textContent=tag;modalBody.innerHTML=body;modal.classList.remove("hidden")}
+function closeModal(){modal.classList.add("hidden")}
+function feedback(msg,type="success"){const old=modalBody.querySelector(".feedback");if(old)old.remove();const d=document.createElement("div");d.className=type+" feedback";d.textContent=msg;modalBody.prepend(d)}
+document.getElementById("closeModal").onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
+function showHome(){home.classList.remove("hidden");mainGame.classList.add("hidden");parentGame.classList.add("hidden")}
+function showMain(){home.classList.add("hidden");mainGame.classList.remove("hidden");parentGame.classList.add("hidden");renderMain()}
+function showParent(){home.classList.add("hidden");mainGame.classList.add("hidden");parentGame.classList.remove("hidden")}
+function openCreateModal(){
+ openModal("Créer le coffret","Nouveau parcours",`<div class="field"><label for="newTeam">Nom de l’équipe</label><input id="newTeam" maxlength="28" placeholder="Ex. Team Sans Indice"></div>
+ <div class="field"><label for="newTeen">Prénom ou pseudo du joueur</label><input id="newTeen" maxlength="20"></div>
+ <div class="field"><label for="newParent">Nom affiché pour le parent partenaire</label><input id="newParent" maxlength="24" placeholder="Ex. Maman, Papa, Mes parents"></div>
+ <button class="primary" id="confirmCreate">Créer</button>`)
+}
+function openGameManager(){
+ if(!state.created){openCreateModal();return}
+ const games=Object.values(store.games);
+ const cards=games.map(game=>`<article class="card"><h3>${esc(game.team||"Partie sans nom")}</h3><p>${esc(game.teen||"Jeune")} + ${esc(game.parentName||"Parent")}<br><small>Code ${esc(game.room)}</small></p><div class="action-row"><button class="secondary" data-open-room="${esc(game.room)}">Ouvrir</button>${game.room===state.room?"":`<button class="danger" data-delete-room="${esc(game.room)}">Supprimer</button>`}</div></article>`).join("");
+ openModal("Partie et profils","Réglages",`<div class="notice"><strong>Profil utilisé sur cet appareil :</strong> ${esc(profileName())}</div>
+ <div class="mode-grid"><article class="mode-card"><h3>${esc(state.teen)}</h3><p>Profil du jeune. Les essais et indices restent séparés.</p><button class="${state.activeRole==="teen"?"primary":"secondary"}" data-role="teen">Utiliser ce profil</button></article><article class="mode-card"><h3>${esc(state.parentName)}</h3><p>Profil du parent sur le même appareil.</p><button class="${state.activeRole==="parent"?"primary":"secondary"}" data-role="parent">Utiliser ce profil</button></article></div>
+ ${games.length>1?`<hr><div class="grid">${cards}</div>`:""}<hr><div class="action-row"><button class="primary" id="newGameBtn">Nouvelle partie</button><button class="danger" id="deleteCurrentBtn">Supprimer cette partie</button></div>`);
+ document.querySelectorAll("[data-role]").forEach(btn=>btn.onclick=()=>{state.activeRole=btn.dataset.role;save();closeModal();renderMain()});
+ document.querySelectorAll("[data-open-room]").forEach(btn=>btn.onclick=()=>activateGame(btn.dataset.openRoom));
+ document.querySelectorAll("[data-delete-room]").forEach(btn=>btn.onclick=()=>{if(confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(btn.dataset.deleteRoom)});
+ document.getElementById("newGameBtn").onclick=openCreateModal;
+ document.getElementById("deleteCurrentBtn").onclick=()=>{if(confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(state.room)}
+}
+
+if(state.created)showMain();
+
+document.getElementById("createBtn").onclick=openCreateModal;
+document.getElementById("manageBtn").onclick=openGameManager;
+document.getElementById("rolePill").onclick=openGameManager;
+document.addEventListener("click",e=>{
+ if(e.target?.id==="confirmCreate"){
+  const team=document.getElementById("newTeam").value.trim(),teen=document.getElementById("newTeen").value.trim(),parent=document.getElementById("newParent").value.trim();
+  if(!team||!teen||!parent){feedback("Complète les trois champs.","error");return}
+  state=structuredClone(defaultState);state.created=true;state.team=team;state.teen=teen;state.parentName=parent;state.activeRole="teen";state.room=randomRoom();save();closeModal();showMain()
+ }
+});
+document.getElementById("joinBtn").onclick=showParent;document.getElementById("backHomeBtn").onclick=showHome;
+function openHelpResponse(){
+ openModal("Répondre à une demande d’aide","Aide-moi",`<p class="muted">Entre le code du coffret et le niveau indiqué dans la demande reçue.</p><div class="field"><label for="helpRoom">Code du coffret</label><input id="helpRoom" maxlength="6" placeholder="Ex. A7K2P9"></div><div class="field"><label for="helpStage">Niveau concerné</label><select id="helpStage"><option value="">Choisir…</option><option value="1">Niveau 1</option><option value="3">Niveau 3</option><option value="5">Niveau 5</option><option value="7">Niveau 7</option><option value="9">Niveau 9</option><option value="11">Niveau 11</option></select></div><button class="primary" id="openHelpRelay">Ouvrir la demande</button>`);
+ document.getElementById("openHelpRelay").onclick=()=>{const room=document.getElementById("helpRoom").value.trim().toUpperCase(),stage=Number(document.getElementById("helpStage").value);if(room.length!==6||!stage){feedback("Entre le code du coffret et le niveau reçu.","error");return}openParentRelay(room,stage)}
+}
+document.getElementById("helpRequestBtn").onclick=openHelpResponse;
+
+function renderMain(){
+ const done=state.completed.filter(Boolean).length;
+ document.getElementById("teamTitle").textContent=state.team;
+ document.getElementById("playersPill").textContent=state.teen+" + "+state.parentName;
+ document.getElementById("rolePill").textContent="Profil : "+profileName();
+ document.getElementById("roomCode").textContent=state.room;
+ document.getElementById("progressBar").style.width=(done/LEVELS.length*100)+"%";
+ document.getElementById("progressText").textContent=done+" niveau"+(done>1?"x":"")+" validé"+(done>1?"s":"")+" sur "+LEVELS.length;
+ renderLevels();renderRewards()
+}
+function levelStatus(i){
+ if(i>0&&!state.completed[i-1])return{open:false,why:"Le niveau précédent doit être validé."};
+ return{open:true,why:""}
+}
+function renderLevels(){
+ const grid=document.getElementById("levelGrid");grid.innerHTML="";
+ LEVELS.forEach((l,i)=>{const st=levelStatus(i),d=document.createElement("article");d.className=`level ${l.mode} ${st.open?"":"locked"} ${state.completed[i]?"done":""}`;
+ d.innerHTML=`<div class="num">${state.completed[i]?"✓":i+1}</div><div class="tag">${l.tag}</div><h3>${esc(l.title)}</h3><p>${esc(l.desc)}</p>${
+   st.open?`<button class="${state.completed[i]?"secondary":"primary"}" data-level="${i}">${state.completed[i]?"Revoir":"Jouer"}</button>`:`<div class="lock-note">🔒 ${esc(st.why)}</div>`
+ }`;grid.appendChild(d)});
+ document.querySelectorAll("[data-level]").forEach(b=>b.onclick=()=>openLevel(Number(b.dataset.level)))
+}
+function completeLevel(i){
+ if(state.completed[i])return;
+ state.completed[i]=true;save();renderMain();feedback("Niveau validé.")
+}
+async function shareText(text){try{if(navigator.share){await navigator.share({title:"Décode-Moi",text});return}await navigator.clipboard.writeText(text);alert("Message copié.")}catch(e){try{await navigator.clipboard.writeText(text);alert("Message copié.")}catch(_){}}}
+function nextRemoteLevel(){for(let i=0;i<LEVELS.length;i++)if(!state.completed[i]&&LEVELS[i].mode==="remote")return i+1;return 11}
+function inviteText(stage){return `Décode-Moi : ouvre le jeu, choisis « J’ai reçu un code », entre ${state.room} puis sélectionne le niveau ${stage}.`}
+document.getElementById("inviteBtn").onclick=()=>shareText(inviteText(nextRemoteLevel()));
+document.getElementById("copyCodeBtn").onclick=async()=>{try{await navigator.clipboard.writeText(state.room);alert("Code copié : "+state.room)}catch(e){prompt("Copie ce code :",state.room)}};
+document.getElementById("shareAppBtn").onclick=async()=>{
+ const source="<!DOCTYPE html>\n"+document.documentElement.outerHTML;
+ const file=new File([source],"decode_moi.html",{type:"text/html"});
+ try{
+   if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({title:"Décode-Moi",files:[file]})}
+   else{const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);alert("Une copie a été téléchargée.")}
+ }catch(e){}
+};
+
+
+function normalize(v){return String(v||"").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ")}
+function matchesAnswer(meta,value){return meta.hashes.includes(hash(meta.salt+"|"+normalize(value)))}
+function personalHintBlock(i){
+ const h=roleData().hints[i];
+ if(h)return `<div class="hintbox"><strong>Indice :</strong> ${esc(REMOTE_META[i].hint)}<br><small>Catégorie choisie : ${esc(h.category)}</small></div>`;
+ return `<div id="personalGate" class="hidden"><div class="notice"><strong>Un indice peut être débloqué.</strong> Le jeune ou le parent répond à une question personnelle. Une réponse courte ou JOKER est acceptée.</div>
+ <div class="field"><label for="personalWho">Qui répond ?</label><select id="personalWho"><option value="">Choisir…</option><option>Le jeune</option><option>Le parent</option></select></div>
+ <div class="field"><label for="personalCategory">Catégorie</label><select id="personalCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div>
+ <div class="field"><label for="personalPrompt">Question</label><input id="personalPrompt" readonly placeholder="Choisis une catégorie"></div>
+ <div class="field"><label for="personalAnswer">Réponse ou JOKER</label><textarea id="personalAnswer"></textarea></div>
+ <button class="secondary" id="unlockHint">Afficher l’indice</button></div>`
+}
+function remoteLevel(i){const m=REMOTE_META[i];return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i+1)}<button class="primary" id="validateLevel">Valider le niveau</button>`}
+
+function relayInput(stage){
+ return `<hr><div class="notice"><strong>Relais nécessaire.</strong> Envoie le code relais et le niveau ${stage} au parent.</div>
+ <div class="action-row"><button class="secondary" id="askRelay">Envoyer la demande</button></div>
+ <div class="field"><label for="relayCode">Code de validation reçu</label><textarea id="relayCode" placeholder="Colle ici le code envoyé par le parent"></textarea></div>`;
+}
+function openLevel(i){
+ const fn=[level1,level2,level3,level4,level5,level6,level7,level8,level9,level10,level11,level12][i];
+ openModal(LEVELS[i].title,LEVELS[i].mode==="remote"?"Relais":"Activité",fn());bindLevel(i)
+}
+function level1(){return remoteLevel(0)}
+function level2(){return `<p>Construisez ensemble la plus haute tour possible avec dix objets.</p><div class="offline"><strong>📵 Sans téléphone pendant 5 minutes.</strong><p>Choisissez les objets, lancez le chrono, posez les téléphones et construisez.</p><button class="secondary" id="startTimer">Lancer 5 minutes</button><div class="timer hidden" id="timer">05:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`}
+function level3(){return remoteLevel(2)}
+function level4(){return `<p>Trouvez ensemble cinq objets : un doux, un lourd, un coloré, un utile et un drôle.</p><div class="offline"><strong>📵 7 minutes sans téléphone.</strong><p>À la fin, chacun explique seulement un choix.</p><button class="secondary" id="startTimer">Lancer 7 minutes</button><div class="timer hidden" id="timer">07:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`}
+function level5(){return remoteLevel(4)}
+function level6(){return `<p>Construisez un pont entre deux livres avec seulement deux feuilles de papier, du ruban adhésif et un petit objet à faire traverser.</p><div class="offline"><strong>Sans téléphone pendant dix minutes.</strong></div><div class="field"><label for="bridgeResult">Résultat</label><select id="bridgeResult"><option value="">Choisir…</option><option>Le pont a tenu</option><option>Le pont a presque tenu</option><option>Nous avons essayé plusieurs solutions</option></select></div><button class="primary" id="validateLevel">Valider</button>`}
+function level7(){return remoteLevel(6)}
+function level8(){return `<p>Préparez ensemble une boisson ou un goûter simple, puis partagez-le.</p><div class="offline"><strong>📵 20 minutes sans téléphone.</strong><p>Le choix doit être réaliste et réalisable avec ce qui est disponible.</p><button class="secondary" id="startTimer">Lancer 20 minutes</button><div class="timer hidden" id="timer">20:00</div><div id="timerDone" class="success hidden">Moment terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`}
+function level9(){return remoteLevel(8)}
+function level10(){return `<p>Faites une sortie de 20 à 45 minutes avec la mère, le père ou les deux parents.</p><div class="offline"><strong>Téléphones rangés pour tout le monde.</strong></div><p>Retrouvez quelque chose de rouge, un mot de plus de huit lettres et un objet dont vous ignorez l’utilité.</p><div class="field"><label for="miniTrip">Quel objet vous a le plus intrigués ?</label><input id="miniTrip" maxlength="100"></div><button class="primary" id="validateLevel">Valider</button>`}
+function level11(){return remoteLevel(10)}
+function level12(){return `<p>Résolvez ensemble les trois mini-énigmes finales.</p>
+<div class="notice">Chaque joueur peut proposer une réponse. Une recherche commune reste autorisée après l’utilisation d’un indice.</div>
+<div class="field"><label for="finalOne">1. Combien de côtés possède un hexagone ?</label><input id="finalOne" inputmode="numeric"></div>
+<div class="field"><label for="finalTwo">2. Quelle est la première lettre du mot « équipe » ?</label><input id="finalTwo" maxlength="2"></div>
+<div class="field"><label for="finalThree">3. Quel est le contraire de « dehors » ?</label><input id="finalThree" maxlength="20"></div>
+<div class="offline"><strong>Finale ensemble :</strong> après validation, choisissez la dernière récompense et fixez sa date.</div>
+<button class="primary" id="validateLevel">Terminer le parcours</button>`}
+
+function startTimer(minutes){
+ const btn=document.getElementById("startTimer"),timer=document.getElementById("timer"),done=document.getElementById("timerDone");
+ btn.classList.add("hidden");timer.classList.remove("hidden");let end=Date.now()+minutes*60000;
+ const tick=()=>{let s=Math.max(0,Math.ceil((end-Date.now())/1000));timer.textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");if(s<=0){clearInterval(int);timer.classList.add("hidden");done.classList.remove("hidden");roleData().localAnswers["timer"+minutes+"done"]=true;save()}};tick();const int=setInterval(tick,1000)
+}
+function bindLevel(i){
+ const ask=document.getElementById("askRelay");if(ask)ask.onclick=()=>shareText(inviteText(i+1));
+ if(LEVELS[i].mode==="remote"){
+  const category=document.getElementById("personalCategory");
+  if(category)category.onchange=()=>{const choices=PERSONAL_PROMPTS[category.value]||[];document.getElementById("personalPrompt").value=choices.length?choices[Math.floor(Math.random()*choices.length)]:""};
+  const unlock=document.getElementById("unlockHint");
+  if(unlock)unlock.onclick=()=>{const who=document.getElementById("personalWho").value,cat=document.getElementById("personalCategory").value,prompt=document.getElementById("personalPrompt").value,answer=document.getElementById("personalAnswer").value.trim();if(!who||!cat||!prompt||!answer){feedback("Complète les choix et écris une réponse ou JOKER.","error");return}roleData().hints[i]={who,category:cat,prompt,answer};save();openLevel(i)};
+  document.getElementById("checkRemote").onclick=()=>{const ok=matchesAnswer(REMOTE_META[i],document.getElementById("remoteAnswer").value);if(ok){roleData().localAnswers["remoteCorrect"+i]=true;save();feedback("Bonne réponse. Il reste à valider le relais.")}else{roleData().attempts[i]=(roleData().attempts[i]||0)+1;save();const gate=document.getElementById("personalGate");if(gate)gate.classList.remove("hidden");if(roleData().attempts[i]>=2&&roleData().hints[i])document.getElementById("researchTogether").classList.remove("hidden");feedback(roleData().attempts[i]===1?"Réponse incorrecte. Un indice peut être débloqué.":"Toujours incorrect. La recherche doit maintenant être faite ensemble.","error")}};
+ }
+ const start=document.getElementById("startTimer");
+ if(start){const minutes=i===1?5:i===3?7:20;if(roleData().localAnswers["timer"+minutes+"done"]){start.classList.add("hidden");document.getElementById("timerDone").classList.remove("hidden")}else start.onclick=()=>startTimer(minutes)}
+ document.getElementById("validateLevel").onclick=()=>{
+  if(LEVELS[i].mode==="remote"){
+   const correct=matchesAnswer(REMOTE_META[i],document.getElementById("remoteAnswer").value)||roleData().localAnswers["remoteCorrect"+i];
+   if(!correct){feedback("La réponse principale doit être correcte.","error");return}
+   const token=document.getElementById("relayCode").value.trim(),payload=decodeRelay(token,state.room,i+1);if(!payload){feedback("Le code reçu n’est pas valide pour ce niveau.","error");return}state.relayAnswers[i]=payload;save();completeLevel(i);return
+  }
+  if(i===1&&!roleData().localAnswers.timer5done){feedback("Terminez d’abord les cinq minutes sans téléphone.","error");return}
+  if(i===3&&!roleData().localAnswers.timer7done){feedback("Terminez d’abord les sept minutes sans téléphone.","error");return}
+  if(i===5&&!document.getElementById("bridgeResult").value){feedback("Sélectionnez le résultat du pont.","error");return}
+  if(i===7&&!roleData().localAnswers.timer20done){feedback("Terminez d’abord les vingt minutes sans téléphone.","error");return}
+  if(i===9&&!document.getElementById("miniTrip").value.trim()){feedback("Indiquez l’objet qui vous a intrigués.","error");return}
+  if(i===11){
+   const one=normalize(document.getElementById("finalOne").value);
+   const two=normalize(document.getElementById("finalTwo").value);
+   const three=normalize(document.getElementById("finalThree").value);
+   if(![one,two,three].every((value,index)=>matchesAnswer(FINAL_META[index],value))){
+    feedback("Une ou plusieurs réponses finales sont incorrectes.","error");
+    return
+   }
+  }
+  completeLevel(i)
+ }
+}
+
+function renderRewards(){
+ const done=state.completed.filter(Boolean).length,grid=document.getElementById("rewardGrid");grid.innerHTML="";
+ REWARDS.forEach((r,i)=>{const open=done>=r.need,reward=state.rewards[i],d=document.createElement("article");d.className=`reward ${open?"":"locked"} ${reward?"chosen":""}`;
+ d.innerHTML=`<span class="badge">${r.badge}</span><h3>${r.title}</h3><p>${reward?`<strong>${esc(reward.activity)}</strong><br>${esc(reward.withWho)} · ${fmt(reward.date)}`:"Le joueur choisit l’activité, les participants et une date."}</p>${open?`<button class="${reward?"secondary":"primary"}" data-reward="${i}">${reward?"Modifier":"Choisir"}</button>`:`<div class="lock-note">🔒 Palier non atteint</div>`}`;grid.appendChild(d)});
+ document.querySelectorAll("[data-reward]").forEach(b=>b.onclick=()=>openReward(Number(b.dataset.reward)))
+}
+function openReward(i){
+ const r=REWARDS[i],x=state.rewards[i]||{};
+ openModal(r.title,"Récompense",`<div class="offline"><strong>Moment sans téléphone :</strong> règle identique pour le jeune et les adultes.</div>
+ <div class="field"><label for="rewardWho">Avec qui ?</label><select id="rewardWho"><option value="">Choisir…</option><option ${x.withWho==="sa mère"?"selected":""}>sa mère</option><option ${x.withWho==="son père"?"selected":""}>son père</option><option ${x.withWho==="ses deux parents"?"selected":""}>ses deux parents</option></select></div>
+ <div class="field"><label for="rewardActivity">Activité</label><select id="rewardActivity"><option value="">Choisir…</option>${r.activities.map(a=>`<option ${x.activity===a?"selected":""}>${a}</option>`).join("")}</select></div>
+ <div class="field"><label for="rewardDate">Date prévue</label><input id="rewardDate" type="date" value="${esc(x.date||"")}"></div>
+ <button class="primary" id="saveReward">Réserver cette récompense</button>`);
+ document.getElementById("saveReward").onclick=()=>{const withWho=document.getElementById("rewardWho").value,activity=document.getElementById("rewardActivity").value,date=document.getElementById("rewardDate").value;if(!withWho||!activity||!date){feedback("Choisis les participants, l’activité et la date.","error");return}state.rewards[i]={withWho,activity,date};save();renderMain();feedback("Récompense enregistrée. Elle ne doit pas être retirée ensuite comme sanction.")}
+}
+
+document.getElementById("openRelayBtn").onclick=()=>{
+ const room=document.getElementById("parentRoom").value.trim().toUpperCase(),stage=Number(document.getElementById("parentStage").value);
+ if(room.length!==6||!stage){alert("Entre le code relais et le niveau reçu.");return}
+ openParentRelay(room,stage)
+};
+function openParentRelay(room,stage){
+ const m=PARENT_META[stage];
+ openModal("Relais du niveau "+stage,"Relais",`<p>${esc(m.question)}</p><div class="field"><label for="parentPuzzleAnswer">Réponse</label><input id="parentPuzzleAnswer"></div><button class="secondary" id="checkParentPuzzle">Vérifier</button><div id="parentHintGate" class="hidden"><div class="notice"><strong>Indice disponible :</strong> réponds à une question personnelle ou utilise JOKER.</div><div class="field"><label for="parentCategory">Catégorie</label><select id="parentCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div><div class="field"><label for="parentPrompt">Question</label><input id="parentPrompt" readonly></div><div class="field"><label for="parentPersonalAnswer">Réponse ou JOKER</label><textarea id="parentPersonalAnswer"></textarea></div><button class="secondary" id="unlockParentHint">Afficher l’indice</button></div><div id="parentHintBox" class="hintbox hidden"><strong>Indice :</strong> ${esc(m.hint)}</div><div id="parentResearch" class="searchbox hidden"><strong>Recherche ensemble obligatoire :</strong> ${esc(m.research)}</div><button class="primary hidden" id="generateRelay">Générer le code</button><div id="generatedArea"></div>`);
+ let correct=false,attempts=0;
+ document.getElementById("parentCategory").onchange=()=>{const choices=PERSONAL_PROMPTS[document.getElementById("parentCategory").value]||[];document.getElementById("parentPrompt").value=choices.length?choices[Math.floor(Math.random()*choices.length)]:""};
+ document.getElementById("checkParentPuzzle").onclick=()=>{const val=normalize(document.getElementById("parentPuzzleAnswer").value);correct=matchesAnswer(m,document.getElementById("parentPuzzleAnswer").value);if(correct){feedback("Bonne réponse.");document.getElementById("generateRelay").classList.remove("hidden")}else{attempts++;document.getElementById("parentHintGate").classList.remove("hidden");if(attempts>=2)document.getElementById("parentResearch").classList.remove("hidden");feedback(attempts===1?"Un indice peut être débloqué.":"La recherche devra être faite ensemble.","error")}};
+ document.getElementById("unlockParentHint").onclick=()=>{const cat=document.getElementById("parentCategory").value,prompt=document.getElementById("parentPrompt").value,ans=document.getElementById("parentPersonalAnswer").value.trim();if(!cat||!prompt||!ans){feedback("Choisis une catégorie et réponds, ou écris JOKER.","error");return}document.getElementById("parentHintBox").classList.remove("hidden")};
+ document.getElementById("generateRelay").onclick=()=>{if(!correct){feedback("La réponse doit être correcte.","error");return}const payload={proof:hash(m.salt+"|"+normalize(document.getElementById("parentPuzzleAnswer").value)),done:true},token=encodeRelay(room,stage,payload);document.getElementById("generatedArea").innerHTML=`<div class="success">Envoie ce code :</div><div class="code-box">${token}</div><div class="action-row" style="margin-top:12px"><button class="primary" id="shareRelay">Envoyer</button><button class="secondary" id="copyRelay">Copier</button></div>`;document.getElementById("shareRelay").onclick=()=>shareText(`Décode-Moi — niveau ${stage} — code :
+${token}`);document.getElementById("copyRelay").onclick=async()=>{try{await navigator.clipboard.writeText(token);alert("Code copié.")}catch(e){prompt("Copie le code :",token)}}}
+}
+
+document.getElementById("rulesBtn").onclick=()=>openModal("Règles de Décode-Moi","À connaître",`
+<div class="notice">Le téléphone est autorisé pour utiliser le jeu et envoyer les codes.</div>
+<p><strong>Décode-Moi</strong> est un parcours évolutif : de nouveaux niveaux pourront être ajoutés sans changer le nom du jeu.</p>
+<p>Les niveaux se débloquent uniquement dans l’ordre. Aucune date n’est imposée.</p>
+<p>Un relais alterne avec une activité à réaliser ensemble.</p>
+<p>Les énigmes mélangent logique, français, mathématiques, sciences, culture générale et mini escape game.</p>
+<p>Après une première erreur, le jeune ou le parent peut obtenir un indice en répondant à une question sur un souvenir, une peur, un rêve, un regret ou un secret léger.</p>
+<p>Le mot JOKER est toujours accepté. Aucun secret grave, traumatisme ou information dangereuse ne doit être demandé.</p>
+<p>Si la réponse reste introuvable après l’indice, la recherche doit être faite ensemble.</p>
+<p>Les activités et récompenses sans téléphone appliquent la même règle au jeune et aux adultes.</p>
+<p>Une récompense débloquée ne doit pas être retirée ensuite comme sanction.</p><p>Sur un appareil partagé, le profil choisi sépare les essais et les indices tout en conservant la progression commune.</p>
+<hr><button class="danger" id="resetGame">Supprimer cette partie de cet appareil</button>`);
+document.addEventListener("click",e=>{if(e.target?.id==="resetGame"&&confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(state.room)});
+</script>
+</body>
+</html>
