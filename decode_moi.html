@@ -188,8 +188,8 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
   <div class="kicker">Le jeu commence ici</div>
   <h1 class="home-title">Décode-Moi</h1>
   <div class="mode-grid">
-    <article class="mode-card"><h3>Créer le coffret</h3><p>Choisis ton rôle, donne les prénoms et reçois le premier code.</p><button class="primary" id="createBtn">Créer</button></article>
-    <article class="mode-card"><h3>J’ai reçu un code</h3><p>Colle le code reçu, ou ouvre directement le lien envoyé.</p><button class="secondary" id="joinBtn">Entrer le code</button></article>
+    <article class="mode-card"><h3>Créer le coffret</h3><p>Le parent remplit les prénoms, puis envoie le coffret par un lien.</p><button class="primary" id="createBtn">Créer</button></article>
+    <article class="mode-card"><h3>J’ai reçu un lien</h3><p>Ouvre-le simplement : le coffret ou l’énigme s’affichent tout seuls.</p><button class="secondary" id="joinBtn">Entrer un code à la main</button></article>
   </div>
   <button class="secondary home-help" id="helpRequestBtn">Répondre à une demande d’aide</button>
 </section>
@@ -205,7 +205,8 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
     <div class="room-tools"><div><div class="muted" style="font-size:.78rem">CODE RELAIS</div><div class="room-code" id="roomCode"></div></div><button class="manage-dot" id="manageBtn" aria-label="Gérer la partie" title="Partie et profils">•••</button></div>
   </div>
   <div class="action-row" style="margin-top:15px">
-    <button class="primary" id="inviteBtn">Envoyer un relais</button>
+    <button class="primary" id="sendCoffretBtn">Envoyer le coffret</button>
+    <button class="secondary" id="inviteBtn">Envoyer un relais</button>
     <button class="secondary" id="copyCodeBtn">Copier le code</button>
     <button class="secondary" id="shareAppBtn">Partager le jeu</button>
   </div>
@@ -314,7 +315,7 @@ const REWARDS=[
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
-const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),relayAnswers:{},rewards:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),relayAnswers:{},pendingRelay:{},rewards:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
  const result=Array(LEVELS.length).fill(false);
@@ -325,6 +326,7 @@ function sanitizeGame(x={}){
  const game={...structuredClone(defaultState),...x};
  game.completed=normalizeCompleted(x.completed);
  game.relayAnswers={...(x.relayAnswers||{})};
+ game.pendingRelay={...(x.pendingRelay||{})};
  game.rewards={...(x.rewards||{})};
  game.activeRole=x.activeRole==="parent"?"parent":"teen";
  game.profileData={parent:{...emptyProfile(),...(x.profileData?.parent||{})},teen:{...emptyProfile(),...(x.profileData?.teen||{})}};
@@ -380,6 +382,9 @@ function randomRoom(){const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";fo
 function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36).toUpperCase().padStart(7,"0")}
 function encodeRelay(room,stage,payload){const data={r:room.toUpperCase(),s:Number(stage),p:payload,c:hash(room.toUpperCase()+"|"+stage+"|"+JSON.stringify(payload))};return btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function decodeRelay(code,room,stage){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";const data=JSON.parse(decodeURIComponent(escape(atob(b))));const ok=data.r===room.toUpperCase()&&Number(data.s)===Number(stage)&&data.c===hash(room.toUpperCase()+"|"+stage+"|"+JSON.stringify(data.p));return ok?data.p:null}catch(e){return null}}
+function encodeInvite(payload){const data={t:"join",p:payload,c:hash(JSON.stringify(payload))};return btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+function decodeInvite(code){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";const data=JSON.parse(decodeURIComponent(escape(atob(b))));return data.t==="join"&&data.c===hash(JSON.stringify(data.p))?data.p:null}catch(e){return null}}
+function appLink(params){return location.origin+location.pathname+"?"+params}
 
 const home=document.getElementById("home"),mainGame=document.getElementById("mainGame"),parentGame=document.getElementById("parentGame");
 const modal=document.getElementById("modal"),modalTitle=document.getElementById("modalTitle"),modalTag=document.getElementById("modalTag"),modalBody=document.getElementById("modalBody");
@@ -401,6 +406,7 @@ function openGameManager(){
  const games=Object.values(store.games);
  const cards=games.map(game=>`<article class="card"><h3>${esc(game.team||"Partie sans nom")}</h3><p>${esc(game.teen||"Jeune")} + ${esc(game.parentName||"Parent")}<br><small>Code ${esc(game.room)}</small></p><div class="action-row"><button class="secondary" data-open-room="${esc(game.room)}">Ouvrir</button>${game.room===state.room?"":`<button class="danger" data-delete-room="${esc(game.room)}">Supprimer</button>`}</div></article>`).join("");
  openModal("Partie et profils","Réglages",`<div class="notice"><strong>Profil utilisé sur cet appareil :</strong> ${esc(profileName())}</div>
+ <p class="muted" style="margin-top:6px">Ce réglage ne sert que si le jeune et le parent jouent sur le même téléphone (il sépare juste les indices). Si chacun a son propre téléphone, pas besoin d’y toucher : le parent répond aux énigmes via le lien reçu dans « Envoyer un relais ».</p>
  <div class="mode-grid"><article class="mode-card"><h3>${esc(state.teen)}</h3><p>Profil du jeune. Les essais et indices restent séparés.</p><button class="${state.activeRole==="teen"?"primary":"secondary"}" data-role="teen">Utiliser ce profil</button></article><article class="mode-card"><h3>${esc(state.parentName)}</h3><p>Profil du parent sur le même appareil.</p><button class="${state.activeRole==="parent"?"primary":"secondary"}" data-role="parent">Utiliser ce profil</button></article></div>
  ${games.length>1?`<hr><div class="grid">${cards}</div>`:""}<hr><div class="action-row"><button class="primary" id="newGameBtn">Nouvelle partie</button><button class="danger" id="deleteCurrentBtn">Supprimer cette partie</button></div>`);
  document.querySelectorAll("[data-role]").forEach(btn=>btn.onclick=()=>{state.activeRole=btn.dataset.role;save();closeModal();renderMain()});
@@ -410,7 +416,34 @@ function openGameManager(){
  document.getElementById("deleteCurrentBtn").onclick=()=>{if(confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(state.room)}
 }
 
+(function handleIncomingLink(){
+ const params=new URLSearchParams(location.search);
+ const joinRaw=params.get("join"),resolveRaw=params.get("resolve"),relayRaw=params.get("relay");
+ if(joinRaw){
+  const payload=decodeInvite(joinRaw);
+  if(payload&&payload.room){
+   const room=String(payload.room).toUpperCase();
+   const existing=store.games[room];
+   const newGame=existing?sanitizeGame(existing):sanitizeGame({...payload,room,created:true,activeRole:"teen"});
+   store.games[room]=newGame;store.activeRoom=room;
+   localStorage.setItem(STORE_KEY,JSON.stringify(store));state=newGame
+  }
+ }else if(resolveRaw){
+  try{
+   let b=resolveRaw.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";
+   const raw=JSON.parse(decodeURIComponent(escape(atob(b))));
+   const stage=Number(raw.s),room=String(raw.r||"").toUpperCase();
+   if(state.created&&state.room===room&&stage>=1){state.pendingRelay[stage-1]=resolveRaw;save()}
+  }catch(e){}
+ }
+ if(relayRaw){
+  const parts=relayRaw.split("-"),r=parts[0],s=Number(parts[1]);
+  if(r&&PARENT_META[s])window.__openRelay=[r.toUpperCase(),s]
+ }
+ if(joinRaw||resolveRaw||relayRaw)history.replaceState({},"",location.pathname)
+})();
 if(state.created)showMain();
+if(window.__openRelay)openParentRelay(window.__openRelay[0],window.__openRelay[1]);
 
 document.getElementById("createBtn").onclick=openCreateModal;
 document.getElementById("manageBtn").onclick=openGameManager;
@@ -419,15 +452,25 @@ document.addEventListener("click",e=>{
  if(e.target?.id==="confirmCreate"){
   const team=document.getElementById("newTeam").value.trim(),teen=document.getElementById("newTeen").value.trim(),parent=document.getElementById("newParent").value.trim();
   if(!team||!teen||!parent){feedback("Complète les trois champs.","error");return}
-  state=structuredClone(defaultState);state.created=true;state.team=team;state.teen=teen;state.parentName=parent;state.activeRole="teen";state.room=randomRoom();save();closeModal();showMain()
+  state=structuredClone(defaultState);state.created=true;state.team=team;state.teen=teen;state.parentName=parent;state.activeRole="teen";state.room=randomRoom();save();closeModal();showMain();openInviteChild()
  }
 });
 document.getElementById("joinBtn").onclick=showParent;document.getElementById("backHomeBtn").onclick=showHome;
+function coffretJoinLink(){return appLink("join="+encodeInvite({team:state.team,teen:state.teen,parentName:state.parentName,room:state.room}))}
+function openInviteChild(){
+ openModal("Coffret créé","Étape suivante",`<p>Envoyez ce lien à <strong>${esc(state.teen)}</strong> : en l’ouvrant sur son téléphone, le coffret s’installe automatiquement, prêt à jouer.</p>
+ <div class="code-box">${esc(coffretJoinLink())}</div>
+ <div class="action-row" style="margin-top:12px"><button class="primary" id="shareJoin">Envoyer le lien</button><button class="secondary" id="copyJoin">Copier le lien</button></div>
+ <p class="muted" style="margin-top:12px">Vous pourrez retrouver ce lien plus tard avec le bouton « Envoyer le coffret » du tableau de bord.</p>`);
+ document.getElementById("shareJoin").onclick=()=>shareText(coffretJoinLink());
+ document.getElementById("copyJoin").onclick=async()=>{try{await navigator.clipboard.writeText(coffretJoinLink());alert("Lien copié.")}catch(e){prompt("Copie ce lien :",coffretJoinLink())}}
+}
 function openHelpResponse(){
  openModal("Répondre à une demande d’aide","Aide-moi",`<p class="muted">Entre le code du coffret et le niveau indiqué dans la demande reçue.</p><div class="field"><label for="helpRoom">Code du coffret</label><input id="helpRoom" maxlength="6" placeholder="Ex. A7K2P9"></div><div class="field"><label for="helpStage">Niveau concerné</label><select id="helpStage"><option value="">Choisir…</option><option value="1">Niveau 1</option><option value="3">Niveau 3</option><option value="5">Niveau 5</option><option value="7">Niveau 7</option><option value="9">Niveau 9</option><option value="11">Niveau 11</option></select></div><button class="primary" id="openHelpRelay">Ouvrir la demande</button>`);
  document.getElementById("openHelpRelay").onclick=()=>{const room=document.getElementById("helpRoom").value.trim().toUpperCase(),stage=Number(document.getElementById("helpStage").value);if(room.length!==6||!stage){feedback("Entre le code du coffret et le niveau reçu.","error");return}openParentRelay(room,stage)}
 }
 document.getElementById("helpRequestBtn").onclick=openHelpResponse;
+document.getElementById("sendCoffretBtn").onclick=openInviteChild;
 
 function renderMain(){
  const done=state.completed.filter(Boolean).length;
@@ -457,7 +500,8 @@ function completeLevel(i){
 }
 async function shareText(text){try{if(navigator.share){await navigator.share({title:"Décode-Moi",text});return}await navigator.clipboard.writeText(text);alert("Message copié.")}catch(e){try{await navigator.clipboard.writeText(text);alert("Message copié.")}catch(_){}}}
 function nextRemoteLevel(){for(let i=0;i<LEVELS.length;i++)if(!state.completed[i]&&LEVELS[i].mode==="remote")return i+1;return 11}
-function inviteText(stage){return `Décode-Moi : ouvre le jeu, choisis « J’ai reçu un code », entre ${state.room} puis sélectionne le niveau ${stage}.`}
+function relayLink(stage){return appLink("relay="+state.room+"-"+stage)}
+function inviteText(stage){return `Décode-Moi : touche ce lien pour répondre à l’énigme du niveau ${stage} → ${relayLink(stage)}`}
 document.getElementById("inviteBtn").onclick=()=>shareText(inviteText(nextRemoteLevel()));
 document.getElementById("copyCodeBtn").onclick=async()=>{try{await navigator.clipboard.writeText(state.room);alert("Code copié : "+state.room)}catch(e){prompt("Copie ce code :",state.room)}};
 document.getElementById("shareAppBtn").onclick=async()=>{
@@ -482,12 +526,13 @@ function personalHintBlock(i){
  <div class="field"><label for="personalAnswer">Réponse ou JOKER</label><textarea id="personalAnswer"></textarea></div>
  <button class="secondary" id="unlockHint">Afficher l’indice</button></div>`
 }
-function remoteLevel(i){const m=REMOTE_META[i];return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i+1)}<button class="primary" id="validateLevel">Valider le niveau</button>`}
+function remoteLevel(i){const m=REMOTE_META[i];return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i+1,i)}<button class="primary" id="validateLevel">Valider le niveau</button>`}
 
-function relayInput(stage){
- return `<hr><div class="notice"><strong>Relais nécessaire.</strong> Envoie le code relais et le niveau ${stage} au parent.</div>
+function relayInput(stage,i){
+ const pending=state.pendingRelay&&state.pendingRelay[i]?state.pendingRelay[i]:"";
+ return `<hr><div class="notice"><strong>Relais nécessaire.</strong> Touche « Envoyer la demande » pour inviter le parent à répondre depuis son téléphone.</div>
  <div class="action-row"><button class="secondary" id="askRelay">Envoyer la demande</button></div>
- <div class="field"><label for="relayCode">Code de validation reçu</label><textarea id="relayCode" placeholder="Colle ici le code envoyé par le parent"></textarea></div>`;
+ <div class="field"><label for="relayCode">Code de validation reçu</label><textarea id="relayCode" placeholder="Se remplit automatiquement si le parent a répondu par lien, sinon colle-le ici">${esc(pending)}</textarea></div>`;
 }
 function openLevel(i){
  const fn=[level1,level2,level3,level4,level5,level6,level7,level8,level9,level10,level11,level12][i];
@@ -580,8 +625,7 @@ function openParentRelay(room,stage){
  document.getElementById("parentCategory").onchange=()=>{const choices=PERSONAL_PROMPTS[document.getElementById("parentCategory").value]||[];document.getElementById("parentPrompt").value=choices.length?choices[Math.floor(Math.random()*choices.length)]:""};
  document.getElementById("checkParentPuzzle").onclick=()=>{const val=normalize(document.getElementById("parentPuzzleAnswer").value);correct=matchesAnswer(m,document.getElementById("parentPuzzleAnswer").value);if(correct){feedback("Bonne réponse.");document.getElementById("generateRelay").classList.remove("hidden")}else{attempts++;document.getElementById("parentHintGate").classList.remove("hidden");if(attempts>=2)document.getElementById("parentResearch").classList.remove("hidden");feedback(attempts===1?"Un indice peut être débloqué.":"La recherche devra être faite ensemble.","error")}};
  document.getElementById("unlockParentHint").onclick=()=>{const cat=document.getElementById("parentCategory").value,prompt=document.getElementById("parentPrompt").value,ans=document.getElementById("parentPersonalAnswer").value.trim();if(!cat||!prompt||!ans){feedback("Choisis une catégorie et réponds, ou écris JOKER.","error");return}document.getElementById("parentHintBox").classList.remove("hidden")};
- document.getElementById("generateRelay").onclick=()=>{if(!correct){feedback("La réponse doit être correcte.","error");return}const payload={proof:hash(m.salt+"|"+normalize(document.getElementById("parentPuzzleAnswer").value)),done:true},token=encodeRelay(room,stage,payload);document.getElementById("generatedArea").innerHTML=`<div class="success">Envoie ce code :</div><div class="code-box">${token}</div><div class="action-row" style="margin-top:12px"><button class="primary" id="shareRelay">Envoyer</button><button class="secondary" id="copyRelay">Copier</button></div>`;document.getElementById("shareRelay").onclick=()=>shareText(`Décode-Moi — niveau ${stage} — code :
-${token}`);document.getElementById("copyRelay").onclick=async()=>{try{await navigator.clipboard.writeText(token);alert("Code copié.")}catch(e){prompt("Copie le code :",token)}}}
+ document.getElementById("generateRelay").onclick=()=>{if(!correct){feedback("La réponse doit être correcte.","error");return}const payload={proof:hash(m.salt+"|"+normalize(document.getElementById("parentPuzzleAnswer").value)),done:true},token=encodeRelay(room,stage,payload),link=appLink("resolve="+token);document.getElementById("generatedArea").innerHTML=`<div class="success">Envoie ce lien, il validera le niveau en un clic :</div><div class="code-box">${esc(link)}</div><div class="action-row" style="margin-top:12px"><button class="primary" id="shareRelay">Envoyer</button><button class="secondary" id="copyRelay">Copier</button></div>`;document.getElementById("shareRelay").onclick=()=>shareText(link);document.getElementById("copyRelay").onclick=async()=>{try{await navigator.clipboard.writeText(link);alert("Lien copié.")}catch(e){prompt("Copie ce lien :",link)}}}
 }
 
 document.getElementById("rulesBtn").onclick=()=>openModal("Règles de Décode-Moi","À connaître",`
