@@ -1,5 +1,11 @@
 name = "decodemoi"
 compatibility_date = "2025-01-01"
+main = "worker.js"
 
 [assets]
 directory = "./"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "ROOMS"
+id = "8a02da62a45040a69a0a5dc8c5ac2057"

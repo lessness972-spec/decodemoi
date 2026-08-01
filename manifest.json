@@ -1,0 +1,14 @@
+{
+  "name": "Décode-Moi — by Dee Kréations",
+  "short_name": "Décode-Moi",
+  "description": "Un parcours de 12 défis à réaliser en duo, à distance et ensemble.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#071322",
+  "theme_color": "#020D20",
+  "lang": "fr",
+  "icons": [
+    { "src": "assets/icone-decodemoi.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }
+  ]
+}

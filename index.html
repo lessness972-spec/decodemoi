@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#020D20">
 <title>Décode-Moi — by Dee Kréations</title>
-<link rel="icon" type="image/png" href="assets/dee-icon.png">
-<link rel="apple-touch-icon" href="assets/dee-icon.png">
+<link rel="icon" type="image/png" href="assets/icone-decodemoi.png">
+<link rel="apple-touch-icon" href="assets/icone-decodemoi.png">
+<link rel="manifest" href="manifest.json">
 <style>
 
 /* Polices de la charte Dee Kréations.
@@ -187,11 +188,15 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
 <section class="hero" id="home">
   <div class="kicker">Le jeu commence ici</div>
   <h1 class="home-title">Décode-Moi</h1>
+  <p class="muted" style="margin:-6px 0 20px;max-width:56ch">Un parcours de 12 défis à réaliser en duo : une énigme à distance alterne avec une activité sans téléphone à faire ensemble. Le parent crée le coffret et l’envoie par un lien ; les énigmes à distance se répondent aussi par lien, sans rien recopier. <a href="#" id="seeRulesLink" style="color:var(--cyan-bright)">Voir les règles en détail</a>.</p>
   <div class="mode-grid">
     <article class="mode-card"><h3>Créer le coffret</h3><p>Le parent remplit les prénoms, puis envoie le coffret par un lien.</p><button class="primary" id="createBtn">Créer</button></article>
     <article class="mode-card"><h3>J’ai reçu un lien</h3><p>Ouvre-le simplement : le coffret ou l’énigme s’affichent tout seuls.</p><button class="secondary" id="joinBtn">Entrer un code à la main</button></article>
   </div>
-  <button class="secondary home-help" id="helpRequestBtn">Répondre à une demande d’aide</button>
+  <div class="action-row" style="margin-top:14px">
+    <button class="primary hidden" id="installBtn">📲 Installer le jeu sur ce téléphone</button>
+  </div>
+  <p class="muted hidden" id="installHintIOS" style="margin-top:10px;font-size:14px">Sur iPhone/iPad : appuyez sur <strong>Partager</strong> puis <strong>Sur l’écran d’accueil</strong>.</p>
 </section>
 
 <main id="mainGame" class="hidden">
@@ -228,7 +233,7 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
   
   <div class="reward-grid" id="rewardGrid"></div>
 </section>
-<p class="footer">Les codes de relais ne contiennent aucun nom complet. La progression reste sur le téléphone principal.</p>
+<p class="footer">Les liens échangés ne contiennent aucun nom complet. La progression est sauvegardée sur chaque téléphone et synchronisée entre les deux.</p>
 <footer class="dee-footer">
   <img src="assets/dee-monogram.png" alt="Dee Kréations">
   <div><strong>Dee Kréations</strong><span>L’élégance de l’idée, la force de la création.</span></div>
@@ -238,16 +243,9 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
 <main id="parentGame" class="hidden">
 <section class="panel">
   <div class="kicker">Relais</div>
-  <h2 style="margin:6px 0 4px">J’ai reçu un code</h2>
-  <p class="muted">Entre le code relais et le numéro reçu.</p>
-  <div class="field"><label for="parentRoom">Code relais</label><input id="parentRoom" maxlength="6" placeholder="Ex. A7K2P9"></div>
-  <div class="field"><label for="parentStage">Niveau reçu</label>
-    <select id="parentStage">
-      <option value="">Choisir…</option>
-      <option value="1">Niveau 1</option><option value="3">Niveau 3</option><option value="5">Niveau 5</option>
-      <option value="7">Niveau 7</option><option value="9">Niveau 9</option><option value="11">Niveau 11</option>
-    </select>
-  </div>
+  <h2 style="margin:6px 0 4px">Entrer un code de coffret</h2>
+  <p class="muted">Entre le code du coffret reçu : l’énigme qui attend une réponse s’affiche automatiquement.</p>
+  <div class="field"><label for="parentRoom">Code du coffret</label><input id="parentRoom" maxlength="6" placeholder="Ex. A7K2P9"></div>
   <button class="primary" id="openRelayBtn">Ouvrir</button>
   <button class="ghost" style="margin-left:6px" id="backHomeBtn">Retour</button>
 </section>
@@ -315,7 +313,7 @@ const REWARDS=[
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
-const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),relayAnswers:{},pendingRelay:{},rewards:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
  const result=Array(LEVELS.length).fill(false);
@@ -325,8 +323,7 @@ function normalizeCompleted(values){
 function sanitizeGame(x={}){
  const game={...structuredClone(defaultState),...x};
  game.completed=normalizeCompleted(x.completed);
- game.relayAnswers={...(x.relayAnswers||{})};
- game.pendingRelay={...(x.pendingRelay||{})};
+ game.parentAnswers={...(x.parentAnswers||{})};
  game.rewards={...(x.rewards||{})};
  game.activeRole=x.activeRole==="parent"?"parent":"teen";
  game.profileData={parent:{...emptyProfile(),...(x.profileData?.parent||{})},teen:{...emptyProfile(),...(x.profileData?.teen||{})}};
@@ -357,7 +354,8 @@ let state=store.activeRoom&&store.games[store.activeRoom]?sanitizeGame(store.gam
 function save(){
  if(!state.room)return;
  state=sanitizeGame(state);store.games[state.room]=state;store.activeRoom=state.room;
- localStorage.setItem(STORE_KEY,JSON.stringify(store))
+ localStorage.setItem(STORE_KEY,JSON.stringify(store));
+ pushToServer()
 }
 function roleData(){
  const role=state.activeRole==="parent"?"parent":"teen";
@@ -380,16 +378,52 @@ function addDays(iso,n){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+
 function fmt(iso){if(!iso)return"";return new Date(iso+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"})}
 function randomRoom(){const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<6;i++)s+=chars[Math.floor(Math.random()*chars.length)];return s}
 function hash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36).toUpperCase().padStart(7,"0")}
-function encodeRelay(room,stage,payload){const data={r:room.toUpperCase(),s:Number(stage),p:payload,c:hash(room.toUpperCase()+"|"+stage+"|"+JSON.stringify(payload))};return btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
-function decodeRelay(code,room,stage){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";const data=JSON.parse(decodeURIComponent(escape(atob(b))));const ok=data.r===room.toUpperCase()&&Number(data.s)===Number(stage)&&data.c===hash(room.toUpperCase()+"|"+stage+"|"+JSON.stringify(data.p));return ok?data.p:null}catch(e){return null}}
 function encodeInvite(payload){const data={t:"join",p:payload,c:hash(JSON.stringify(payload))};return btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
 function decodeInvite(code){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";const data=JSON.parse(decodeURIComponent(escape(atob(b))));return data.t==="join"&&data.c===hash(JSON.stringify(data.p))?data.p:null}catch(e){return null}}
 function appLink(params){return location.origin+location.pathname+"?"+params}
 
+function roomApiUrl(room){return location.origin+"/api/room/"+encodeURIComponent(room)}
+function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards}}
+let currentOpenLevel=null;
+function mergeServerState(server){
+ if(!server||typeof server!=="object"||!state.created)return false;
+ let changed=false;
+ if(Array.isArray(server.completed))server.completed.forEach((v,i)=>{if(v&&!state.completed[i]){state.completed[i]=true;changed=true}});
+ if(server.parentAnswers)Object.keys(server.parentAnswers).forEach(k=>{if(server.parentAnswers[k]&&!state.parentAnswers[k]){state.parentAnswers[k]=true;changed=true}});
+ if(server.rewards)Object.keys(server.rewards).forEach(k=>{if(!state.rewards[k]&&server.rewards[k]){state.rewards[k]=server.rewards[k];changed=true}});
+ if(changed){
+  save();
+  if(!mainGame.classList.contains("hidden"))renderMain();
+  if(currentOpenLevel!==null&&LEVELS[currentOpenLevel]&&LEVELS[currentOpenLevel].mode==="remote")openLevel(currentOpenLevel)
+ }
+ return changed
+}
+async function pushToServer(){
+ if(!state.room)return;
+ try{
+  const res=await fetch(roomApiUrl(state.room),{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(syncPayload())});
+  if(res.ok)mergeServerState(await res.json())
+ }catch(e){}
+}
+async function pullFromServer(room){
+ try{
+  const res=await fetch(roomApiUrl(room),{cache:"no-store"});
+  if(!res.ok)return null;
+  return await res.json()
+ }catch(e){return null}
+}
+function nextPendingStage(server){
+ const completed=server.completed||[],answered=server.parentAnswers||{};
+ for(let i=0;i<LEVELS.length;i++){
+  if(LEVELS[i].mode==="remote"&&!completed[i]&&!answered[i]&&PARENT_META[i+1])return i+1
+ }
+ return null
+}
+
 const home=document.getElementById("home"),mainGame=document.getElementById("mainGame"),parentGame=document.getElementById("parentGame");
 const modal=document.getElementById("modal"),modalTitle=document.getElementById("modalTitle"),modalTag=document.getElementById("modalTag"),modalBody=document.getElementById("modalBody");
 function openModal(title,tag,body){modalTitle.textContent=title;modalTag.textContent=tag;modalBody.innerHTML=body;modal.classList.remove("hidden")}
-function closeModal(){modal.classList.add("hidden")}
+function closeModal(){modal.classList.add("hidden");currentOpenLevel=null}
 function feedback(msg,type="success"){const old=modalBody.querySelector(".feedback");if(old)old.remove();const d=document.createElement("div");d.className=type+" feedback";d.textContent=msg;modalBody.prepend(d)}
 document.getElementById("closeModal").onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 function showHome(){home.classList.remove("hidden");mainGame.classList.add("hidden");parentGame.classList.add("hidden")}
@@ -418,7 +452,7 @@ function openGameManager(){
 
 (function handleIncomingLink(){
  const params=new URLSearchParams(location.search);
- const joinRaw=params.get("join"),resolveRaw=params.get("resolve"),relayRaw=params.get("relay");
+ const joinRaw=params.get("join"),roomRaw=params.get("room");
  if(joinRaw){
   const payload=decodeInvite(joinRaw);
   if(payload&&payload.room){
@@ -428,22 +462,14 @@ function openGameManager(){
    store.games[room]=newGame;store.activeRoom=room;
    localStorage.setItem(STORE_KEY,JSON.stringify(store));state=newGame
   }
- }else if(resolveRaw){
-  try{
-   let b=resolveRaw.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";
-   const raw=JSON.parse(decodeURIComponent(escape(atob(b))));
-   const stage=Number(raw.s),room=String(raw.r||"").toUpperCase();
-   if(state.created&&state.room===room&&stage>=1){state.pendingRelay[stage-1]=resolveRaw;save()}
-  }catch(e){}
  }
- if(relayRaw){
-  const parts=relayRaw.split("-"),r=parts[0],s=Number(parts[1]);
-  if(r&&PARENT_META[s])window.__openRelay=[r.toUpperCase(),s]
- }
- if(joinRaw||resolveRaw||relayRaw)history.replaceState({},"",location.pathname)
+ if(roomRaw&&roomRaw.trim())window.__openRoomAnswer=roomRaw.trim().toUpperCase();
+ if(joinRaw||roomRaw)history.replaceState({},"",location.pathname)
 })();
 if(state.created)showMain();
-if(window.__openRelay)openParentRelay(window.__openRelay[0],window.__openRelay[1]);
+pushToServer();
+setInterval(()=>{if(state.created)pushToServer()},4000);
+if(window.__openRoomAnswer)openParentAnswer(window.__openRoomAnswer);
 
 document.getElementById("createBtn").onclick=openCreateModal;
 document.getElementById("manageBtn").onclick=openGameManager;
@@ -465,12 +491,8 @@ function openInviteChild(){
  document.getElementById("shareJoin").onclick=()=>shareText(coffretJoinLink());
  document.getElementById("copyJoin").onclick=async()=>{try{await navigator.clipboard.writeText(coffretJoinLink());alert("Lien copié.")}catch(e){prompt("Copie ce lien :",coffretJoinLink())}}
 }
-function openHelpResponse(){
- openModal("Répondre à une demande d’aide","Aide-moi",`<p class="muted">Entre le code du coffret et le niveau indiqué dans la demande reçue.</p><div class="field"><label for="helpRoom">Code du coffret</label><input id="helpRoom" maxlength="6" placeholder="Ex. A7K2P9"></div><div class="field"><label for="helpStage">Niveau concerné</label><select id="helpStage"><option value="">Choisir…</option><option value="1">Niveau 1</option><option value="3">Niveau 3</option><option value="5">Niveau 5</option><option value="7">Niveau 7</option><option value="9">Niveau 9</option><option value="11">Niveau 11</option></select></div><button class="primary" id="openHelpRelay">Ouvrir la demande</button>`);
- document.getElementById("openHelpRelay").onclick=()=>{const room=document.getElementById("helpRoom").value.trim().toUpperCase(),stage=Number(document.getElementById("helpStage").value);if(room.length!==6||!stage){feedback("Entre le code du coffret et le niveau reçu.","error");return}openParentRelay(room,stage)}
-}
-document.getElementById("helpRequestBtn").onclick=openHelpResponse;
 document.getElementById("sendCoffretBtn").onclick=openInviteChild;
+document.getElementById("seeRulesLink").onclick=(e)=>{e.preventDefault();document.getElementById("rulesBtn").click()};
 
 function renderMain(){
  const done=state.completed.filter(Boolean).length;
@@ -499,10 +521,9 @@ function completeLevel(i){
  state.completed[i]=true;save();renderMain();feedback("Niveau validé.")
 }
 async function shareText(text){try{if(navigator.share){await navigator.share({title:"Décode-Moi",text});return}await navigator.clipboard.writeText(text);alert("Message copié.")}catch(e){try{await navigator.clipboard.writeText(text);alert("Message copié.")}catch(_){}}}
-function nextRemoteLevel(){for(let i=0;i<LEVELS.length;i++)if(!state.completed[i]&&LEVELS[i].mode==="remote")return i+1;return 11}
-function relayLink(stage){return appLink("relay="+state.room+"-"+stage)}
-function inviteText(stage){return `Décode-Moi : touche ce lien pour répondre à l’énigme du niveau ${stage} → ${relayLink(stage)}`}
-document.getElementById("inviteBtn").onclick=()=>shareText(inviteText(nextRemoteLevel()));
+function relayLink(){return appLink("room="+state.room)}
+function inviteText(){return `Décode-Moi : touche ce lien pour répondre à l’énigme qui attend → ${relayLink()}`}
+document.getElementById("inviteBtn").onclick=()=>shareText(inviteText());
 document.getElementById("copyCodeBtn").onclick=async()=>{try{await navigator.clipboard.writeText(state.room);alert("Code copié : "+state.room)}catch(e){prompt("Copie ce code :",state.room)}};
 document.getElementById("shareAppBtn").onclick=async()=>{
  const source="<!DOCTYPE html>\n"+document.documentElement.outerHTML;
@@ -526,15 +547,16 @@ function personalHintBlock(i){
  <div class="field"><label for="personalAnswer">Réponse ou JOKER</label><textarea id="personalAnswer"></textarea></div>
  <button class="secondary" id="unlockHint">Afficher l’indice</button></div>`
 }
-function remoteLevel(i){const m=REMOTE_META[i];return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i+1,i)}<button class="primary" id="validateLevel">Valider le niveau</button>`}
+function remoteLevel(i){const m=REMOTE_META[i];return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>`}
 
-function relayInput(stage,i){
- const pending=state.pendingRelay&&state.pendingRelay[i]?state.pendingRelay[i]:"";
- return `<hr><div class="notice"><strong>Relais nécessaire.</strong> Touche « Envoyer la demande » pour inviter le parent à répondre depuis son téléphone.</div>
- <div class="action-row"><button class="secondary" id="askRelay">Envoyer la demande</button></div>
- <div class="field"><label for="relayCode">Code de validation reçu</label><textarea id="relayCode" placeholder="Se remplit automatiquement si le parent a répondu par lien, sinon colle-le ici">${esc(pending)}</textarea></div>`;
+function relayInput(i){
+ const answered=!!(state.parentAnswers&&state.parentAnswers[i]);
+ if(answered)return `<hr><div class="success" id="relayStatus"><strong>Réponse du parent reçue ✓</strong> Tu peux valider le niveau.</div>`;
+ return `<hr><div class="notice" id="relayStatus"><strong>Il manque la réponse du parent.</strong> Touche « Prévenir le parent » pour l’inviter à répondre depuis son téléphone. Cet écran se met à jour tout seul dès qu’il a répondu.</div>
+ <div class="action-row"><button class="secondary" id="askRelay">Prévenir le parent</button><button class="ghost" id="refreshRelay">Vérifier maintenant</button></div>`;
 }
 function openLevel(i){
+ currentOpenLevel=i;
  const fn=[level1,level2,level3,level4,level5,level6,level7,level8,level9,level10,level11,level12][i];
  openModal(LEVELS[i].title,LEVELS[i].mode==="remote"?"Relais":"Activité",fn());bindLevel(i)
 }
@@ -563,7 +585,8 @@ function startTimer(minutes){
  const tick=()=>{let s=Math.max(0,Math.ceil((end-Date.now())/1000));timer.textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");if(s<=0){clearInterval(int);timer.classList.add("hidden");done.classList.remove("hidden");roleData().localAnswers["timer"+minutes+"done"]=true;save()}};tick();const int=setInterval(tick,1000)
 }
 function bindLevel(i){
- const ask=document.getElementById("askRelay");if(ask)ask.onclick=()=>shareText(inviteText(i+1));
+ const ask=document.getElementById("askRelay");if(ask)ask.onclick=()=>shareText(inviteText());
+ const refresh=document.getElementById("refreshRelay");if(refresh)refresh.onclick=async()=>{refresh.disabled=true;await pushToServer();if(currentOpenLevel===i)openLevel(i)};
  if(LEVELS[i].mode==="remote"){
   const category=document.getElementById("personalCategory");
   if(category)category.onchange=()=>{const choices=PERSONAL_PROMPTS[category.value]||[];document.getElementById("personalPrompt").value=choices.length?choices[Math.floor(Math.random()*choices.length)]:""};
@@ -577,7 +600,8 @@ function bindLevel(i){
   if(LEVELS[i].mode==="remote"){
    const correct=matchesAnswer(REMOTE_META[i],document.getElementById("remoteAnswer").value)||roleData().localAnswers["remoteCorrect"+i];
    if(!correct){feedback("La réponse principale doit être correcte.","error");return}
-   const token=document.getElementById("relayCode").value.trim(),payload=decodeRelay(token,state.room,i+1);if(!payload){feedback("Le code reçu n’est pas valide pour ce niveau.","error");return}state.relayAnswers[i]=payload;save();completeLevel(i);return
+   if(!state.parentAnswers[i]){feedback("Il manque encore la réponse du parent. Touche « Vérifier maintenant » après qu’il ait répondu.","error");return}
+   completeLevel(i);return
   }
   if(i===1&&!roleData().localAnswers.timer5done){feedback("Terminez d’abord les cinq minutes sans téléphone.","error");return}
   if(i===3&&!roleData().localAnswers.timer7done){feedback("Terminez d’abord les sept minutes sans téléphone.","error");return}
@@ -614,18 +638,42 @@ function openReward(i){
 }
 
 document.getElementById("openRelayBtn").onclick=()=>{
- const room=document.getElementById("parentRoom").value.trim().toUpperCase(),stage=Number(document.getElementById("parentStage").value);
- if(room.length!==6||!stage){alert("Entre le code relais et le niveau reçu.");return}
- openParentRelay(room,stage)
+ const room=document.getElementById("parentRoom").value.trim().toUpperCase();
+ if(room.length!==6){alert("Entre le code du coffret reçu.");return}
+ openParentAnswer(room)
 };
-function openParentRelay(room,stage){
+async function openParentAnswer(room){
+ openModal("Coffret "+room,"Relais",`<p class="muted">Vérification du coffret…</p>`);
+ const server=await pullFromServer(room);
+ if(!server){feedback("Ce code n’a pas été trouvé. Vérifiez qu’il est correct et que vous avez une connexion internet.","error");return}
+ const stage=nextPendingStage(server);
+ if(!stage){
+  openModal("Coffret "+room,"Relais",`<div class="success">Aucune énigme n’attend de réponse pour l’instant chez ${esc(server.teen||"le jeune")}.</div><button class="ghost" id="closeParentAnswer">Fermer</button>`);
+  document.getElementById("closeParentAnswer").onclick=closeModal;
+  return
+ }
+ openParentRelay(room,stage,server)
+}
+function openParentRelay(room,stage,server){
  const m=PARENT_META[stage];
- openModal("Relais du niveau "+stage,"Relais",`<p>${esc(m.question)}</p><div class="field"><label for="parentPuzzleAnswer">Réponse</label><input id="parentPuzzleAnswer"></div><button class="secondary" id="checkParentPuzzle">Vérifier</button><div id="parentHintGate" class="hidden"><div class="notice"><strong>Indice disponible :</strong> réponds à une question personnelle ou utilise JOKER.</div><div class="field"><label for="parentCategory">Catégorie</label><select id="parentCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div><div class="field"><label for="parentPrompt">Question</label><input id="parentPrompt" readonly></div><div class="field"><label for="parentPersonalAnswer">Réponse ou JOKER</label><textarea id="parentPersonalAnswer"></textarea></div><button class="secondary" id="unlockParentHint">Afficher l’indice</button></div><div id="parentHintBox" class="hintbox hidden"><strong>Indice :</strong> ${esc(m.hint)}</div><div id="parentResearch" class="searchbox hidden"><strong>Recherche ensemble obligatoire :</strong> ${esc(m.research)}</div><button class="primary hidden" id="generateRelay">Générer le code</button><div id="generatedArea"></div>`);
+ openModal("Relais du niveau "+stage,"Relais",`<p>${esc(m.question)}</p><div class="field"><label for="parentPuzzleAnswer">Réponse</label><input id="parentPuzzleAnswer"></div><button class="secondary" id="checkParentPuzzle">Vérifier</button><div id="parentHintGate" class="hidden"><div class="notice"><strong>Indice disponible :</strong> réponds à une question personnelle ou utilise JOKER.</div><div class="field"><label for="parentCategory">Catégorie</label><select id="parentCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div><div class="field"><label for="parentPrompt">Question</label><input id="parentPrompt" readonly></div><div class="field"><label for="parentPersonalAnswer">Réponse ou JOKER</label><textarea id="parentPersonalAnswer"></textarea></div><button class="secondary" id="unlockParentHint">Afficher l’indice</button></div><div id="parentHintBox" class="hintbox hidden"><strong>Indice :</strong> ${esc(m.hint)}</div><div id="parentResearch" class="searchbox hidden"><strong>Recherche ensemble obligatoire :</strong> ${esc(m.research)}</div><button class="primary hidden" id="sendParentAnswer">Envoyer la réponse</button><div id="generatedArea"></div>`);
  let correct=false,attempts=0;
  document.getElementById("parentCategory").onchange=()=>{const choices=PERSONAL_PROMPTS[document.getElementById("parentCategory").value]||[];document.getElementById("parentPrompt").value=choices.length?choices[Math.floor(Math.random()*choices.length)]:""};
- document.getElementById("checkParentPuzzle").onclick=()=>{const val=normalize(document.getElementById("parentPuzzleAnswer").value);correct=matchesAnswer(m,document.getElementById("parentPuzzleAnswer").value);if(correct){feedback("Bonne réponse.");document.getElementById("generateRelay").classList.remove("hidden")}else{attempts++;document.getElementById("parentHintGate").classList.remove("hidden");if(attempts>=2)document.getElementById("parentResearch").classList.remove("hidden");feedback(attempts===1?"Un indice peut être débloqué.":"La recherche devra être faite ensemble.","error")}};
+ document.getElementById("checkParentPuzzle").onclick=()=>{correct=matchesAnswer(m,document.getElementById("parentPuzzleAnswer").value);if(correct){feedback("Bonne réponse.");document.getElementById("sendParentAnswer").classList.remove("hidden")}else{attempts++;document.getElementById("parentHintGate").classList.remove("hidden");if(attempts>=2)document.getElementById("parentResearch").classList.remove("hidden");feedback(attempts===1?"Un indice peut être débloqué.":"La recherche devra être faite ensemble.","error")}};
  document.getElementById("unlockParentHint").onclick=()=>{const cat=document.getElementById("parentCategory").value,prompt=document.getElementById("parentPrompt").value,ans=document.getElementById("parentPersonalAnswer").value.trim();if(!cat||!prompt||!ans){feedback("Choisis une catégorie et réponds, ou écris JOKER.","error");return}document.getElementById("parentHintBox").classList.remove("hidden")};
- document.getElementById("generateRelay").onclick=()=>{if(!correct){feedback("La réponse doit être correcte.","error");return}const payload={proof:hash(m.salt+"|"+normalize(document.getElementById("parentPuzzleAnswer").value)),done:true},token=encodeRelay(room,stage,payload),link=appLink("resolve="+token);document.getElementById("generatedArea").innerHTML=`<div class="success">Envoie ce lien, il validera le niveau en un clic :</div><div class="code-box">${esc(link)}</div><div class="action-row" style="margin-top:12px"><button class="primary" id="shareRelay">Envoyer</button><button class="secondary" id="copyRelay">Copier</button></div>`;document.getElementById("shareRelay").onclick=()=>shareText(link);document.getElementById("copyRelay").onclick=async()=>{try{await navigator.clipboard.writeText(link);alert("Lien copié.")}catch(e){prompt("Copie ce lien :",link)}}}
+ document.getElementById("sendParentAnswer").onclick=async()=>{
+  if(!correct){feedback("La réponse doit être correcte.","error");return}
+  const btn=document.getElementById("sendParentAnswer");btn.disabled=true;
+  const payload={room,team:"",teen:"",parentName:"",completed:Array(LEVELS.length).fill(false),parentAnswers:{[stage-1]:true},rewards:{}};
+  try{
+   const res=await fetch(roomApiUrl(room),{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
+   if(!res.ok)throw new Error("http "+res.status);
+   document.getElementById("generatedArea").innerHTML=`<div class="success">C’est envoyé ! ${esc(server.teen||"Le jeune")} peut maintenant valider le niveau ${stage} chez lui, sans rien recopier.</div>`;
+  }catch(e){
+   feedback("Impossible d’envoyer la réponse : vérifiez votre connexion internet et réessayez.","error");
+   btn.disabled=false
+  }
+ }
 }
 
 document.getElementById("rulesBtn").onclick=()=>openModal("Règles de Décode-Moi","À connaître",`
@@ -641,6 +689,22 @@ document.getElementById("rulesBtn").onclick=()=>openModal("Règles de Décode-Mo
 <p>Une récompense débloquée ne doit pas être retirée ensuite comme sanction.</p><p>Sur un appareil partagé, le profil choisi sépare les essais et les indices tout en conservant la progression commune.</p>
 <hr><button class="danger" id="resetGame">Supprimer cette partie de cet appareil</button>`);
 document.addEventListener("click",e=>{if(e.target?.id==="resetGame"&&confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(state.room)});
+
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("service-worker.js").catch(()=>{})})}
+const isStandalone=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
+let deferredInstallPrompt=null;
+window.addEventListener("beforeinstallprompt",(e)=>{
+ e.preventDefault();deferredInstallPrompt=e;
+ if(!isStandalone)document.getElementById("installBtn").classList.remove("hidden")
+});
+document.getElementById("installBtn").onclick=async()=>{
+ if(!deferredInstallPrompt)return;
+ deferredInstallPrompt.prompt();
+ await deferredInstallPrompt.userChoice;
+ deferredInstallPrompt=null;
+ document.getElementById("installBtn").classList.add("hidden")
+};
+if(!isStandalone&&/iphone|ipad|ipod/i.test(navigator.userAgent))document.getElementById("installHintIOS").classList.remove("hidden");
 </script>
 </body>
 </html>
