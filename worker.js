@@ -28,6 +28,8 @@ function mergeRoom(existing, incoming) {
     completed: mergeBoolArray(base.completed, incoming.completed),
     parentAnswers: mergeBoolMap(base.parentAnswers, incoming.parentAnswers),
     rewards: { ...(incoming.rewards || {}), ...(base.rewards || {}) },
+    teenLastSeen: Math.max(Number(base.teenLastSeen) || 0, Number(incoming.teenLastSeen) || 0),
+    parentLastSeen: Math.max(Number(base.parentLastSeen) || 0, Number(incoming.parentLastSeen) || 0),
     updatedAt: Date.now()
   };
 }

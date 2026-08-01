@@ -205,7 +205,7 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
     <div>
       <div class="kicker">Partie principale</div>
       <h2 style="margin:5px 0 7px" id="teamTitle"></h2>
-      <div class="pills"><span class="pill" id="playersPill"></span><span class="pill profile-pill" id="rolePill" title="Changer de profil"></span></div>
+      <div class="pills"><span class="pill" id="playersPill"></span><span class="pill profile-pill" id="rolePill" title="Changer de profil"></span><span class="pill" id="parentPresencePill"></span></div>
     </div>
     <div class="room-tools"><div><div class="muted" style="font-size:.78rem">CODE RELAIS</div><div class="room-code" id="roomCode"></div></div><button class="manage-dot" id="manageBtn" aria-label="Gérer la partie" title="Partie et profils">•••</button></div>
   </div>
@@ -313,7 +313,7 @@ const REWARDS=[
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
-const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
  const result=Array(LEVELS.length).fill(false);
@@ -325,6 +325,8 @@ function sanitizeGame(x={}){
  game.completed=normalizeCompleted(x.completed);
  game.parentAnswers={...(x.parentAnswers||{})};
  game.rewards={...(x.rewards||{})};
+ game.teenLastSeen=Number(x.teenLastSeen)||0;
+ game.parentLastSeen=Number(x.parentLastSeen)||0;
  game.activeRole=x.activeRole==="parent"?"parent":"teen";
  game.profileData={parent:{...emptyProfile(),...(x.profileData?.parent||{})},teen:{...emptyProfile(),...(x.profileData?.teen||{})}};
  if(!x.profileData){
@@ -383,16 +385,31 @@ function decodeInvite(code){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");w
 function appLink(params){return location.origin+location.pathname+"?"+params}
 
 function roomApiUrl(room){return location.origin+"/api/room/"+encodeURIComponent(room)}
-function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards}}
+function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,teenLastSeen:Date.now()}}
+function presenceLabel(ts){
+ if(!ts)return "jamais connecté";
+ const diff=Date.now()-ts;
+ if(diff<15000)return "en ligne";
+ if(diff<90000)return "vu à l’instant";
+ const min=Math.round(diff/60000);
+ if(min<60)return "vu il y a "+min+" min";
+ return "vu il y a "+Math.round(min/60)+" h"
+}
 let currentOpenLevel=null;
 function mergeServerState(server){
  if(!server||typeof server!=="object"||!state.created)return false;
- let changed=false;
+ let changed=false,presenceChanged=false;
  if(Array.isArray(server.completed))server.completed.forEach((v,i)=>{if(v&&!state.completed[i]){state.completed[i]=true;changed=true}});
  if(server.parentAnswers)Object.keys(server.parentAnswers).forEach(k=>{if(server.parentAnswers[k]&&!state.parentAnswers[k]){state.parentAnswers[k]=true;changed=true}});
  if(server.rewards)Object.keys(server.rewards).forEach(k=>{if(!state.rewards[k]&&server.rewards[k]){state.rewards[k]=server.rewards[k];changed=true}});
+ if(typeof server.parentLastSeen==="number"&&server.parentLastSeen>state.parentLastSeen){state.parentLastSeen=server.parentLastSeen;presenceChanged=true}
+ if(typeof server.teenLastSeen==="number"&&server.teenLastSeen>state.teenLastSeen){state.teenLastSeen=server.teenLastSeen;presenceChanged=true}
  if(changed){
-  save();
+  save()
+ }else if(presenceChanged&&state.room){
+  state=sanitizeGame(state);store.games[state.room]=state;store.activeRoom=state.room;localStorage.setItem(STORE_KEY,JSON.stringify(store))
+ }
+ if(changed||presenceChanged){
   if(!mainGame.classList.contains("hidden"))renderMain();
   if(currentOpenLevel!==null&&LEVELS[currentOpenLevel]&&LEVELS[currentOpenLevel].mode==="remote")openLevel(currentOpenLevel)
  }
@@ -423,7 +440,10 @@ function nextPendingStage(server){
 const home=document.getElementById("home"),mainGame=document.getElementById("mainGame"),parentGame=document.getElementById("parentGame");
 const modal=document.getElementById("modal"),modalTitle=document.getElementById("modalTitle"),modalTag=document.getElementById("modalTag"),modalBody=document.getElementById("modalBody");
 function openModal(title,tag,body){modalTitle.textContent=title;modalTag.textContent=tag;modalBody.innerHTML=body;modal.classList.remove("hidden")}
-function closeModal(){modal.classList.add("hidden");currentOpenLevel=null}
+let parentHeartbeatTimer=null;
+function stopParentHeartbeat(){if(parentHeartbeatTimer){clearInterval(parentHeartbeatTimer);parentHeartbeatTimer=null}}
+function pingParentPresence(room){fetch(roomApiUrl(room),{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({room,team:"",teen:"",parentName:"",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},parentLastSeen:Date.now()})}).catch(()=>{})}
+function closeModal(){modal.classList.add("hidden");currentOpenLevel=null;stopParentHeartbeat()}
 function feedback(msg,type="success"){const old=modalBody.querySelector(".feedback");if(old)old.remove();const d=document.createElement("div");d.className=type+" feedback";d.textContent=msg;modalBody.prepend(d)}
 document.getElementById("closeModal").onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 function showHome(){home.classList.remove("hidden");mainGame.classList.add("hidden");parentGame.classList.add("hidden")}
@@ -499,6 +519,7 @@ function renderMain(){
  document.getElementById("teamTitle").textContent=state.team;
  document.getElementById("playersPill").textContent=state.teen+" + "+state.parentName;
  document.getElementById("rolePill").textContent="Profil : "+profileName();
+ document.getElementById("parentPresencePill").textContent=state.parentName+" : "+presenceLabel(state.parentLastSeen);
  document.getElementById("roomCode").textContent=state.room;
  document.getElementById("progressBar").style.width=(done/LEVELS.length*100)+"%";
  document.getElementById("progressText").textContent=done+" niveau"+(done>1?"x":"")+" validé"+(done>1?"s":"")+" sur "+LEVELS.length;
@@ -644,19 +665,23 @@ document.getElementById("openRelayBtn").onclick=()=>{
 };
 async function openParentAnswer(room){
  openModal("Coffret "+room,"Relais",`<p class="muted">Vérification du coffret…</p>`);
+ stopParentHeartbeat();
+ pingParentPresence(room);
+ parentHeartbeatTimer=setInterval(()=>pingParentPresence(room),4000);
  const server=await pullFromServer(room);
  if(!server){feedback("Ce code n’a pas été trouvé. Vérifiez qu’il est correct et que vous avez une connexion internet.","error");return}
  const stage=nextPendingStage(server);
+ const presence=`<p class="muted" style="margin-top:-4px">${esc(server.teen||"Le jeune")} : ${presenceLabel(server.teenLastSeen)}</p>`;
  if(!stage){
-  openModal("Coffret "+room,"Relais",`<div class="success">Aucune énigme n’attend de réponse pour l’instant chez ${esc(server.teen||"le jeune")}.</div><button class="ghost" id="closeParentAnswer">Fermer</button>`);
+  openModal("Coffret "+room,"Relais",`<div class="success">Aucune énigme n’attend de réponse pour l’instant chez ${esc(server.teen||"le jeune")}.</div>${presence}<button class="ghost" id="closeParentAnswer">Fermer</button>`);
   document.getElementById("closeParentAnswer").onclick=closeModal;
   return
  }
- openParentRelay(room,stage,server)
+ openParentRelay(room,stage,server,presence)
 }
-function openParentRelay(room,stage,server){
+function openParentRelay(room,stage,server,presence){
  const m=PARENT_META[stage];
- openModal("Relais du niveau "+stage,"Relais",`<p>${esc(m.question)}</p><div class="field"><label for="parentPuzzleAnswer">Réponse</label><input id="parentPuzzleAnswer"></div><button class="secondary" id="checkParentPuzzle">Vérifier</button><div id="parentHintGate" class="hidden"><div class="notice"><strong>Indice disponible :</strong> réponds à une question personnelle ou utilise JOKER.</div><div class="field"><label for="parentCategory">Catégorie</label><select id="parentCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div><div class="field"><label for="parentPrompt">Question</label><input id="parentPrompt" readonly></div><div class="field"><label for="parentPersonalAnswer">Réponse ou JOKER</label><textarea id="parentPersonalAnswer"></textarea></div><button class="secondary" id="unlockParentHint">Afficher l’indice</button></div><div id="parentHintBox" class="hintbox hidden"><strong>Indice :</strong> ${esc(m.hint)}</div><div id="parentResearch" class="searchbox hidden"><strong>Recherche ensemble obligatoire :</strong> ${esc(m.research)}</div><button class="primary hidden" id="sendParentAnswer">Envoyer la réponse</button><div id="generatedArea"></div>`);
+ openModal("Relais du niveau "+stage,"Relais",`${presence||""}<p>${esc(m.question)}</p><div class="field"><label for="parentPuzzleAnswer">Réponse</label><input id="parentPuzzleAnswer"></div><button class="secondary" id="checkParentPuzzle">Vérifier</button><div id="parentHintGate" class="hidden"><div class="notice"><strong>Indice disponible :</strong> réponds à une question personnelle ou utilise JOKER.</div><div class="field"><label for="parentCategory">Catégorie</label><select id="parentCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div><div class="field"><label for="parentPrompt">Question</label><input id="parentPrompt" readonly></div><div class="field"><label for="parentPersonalAnswer">Réponse ou JOKER</label><textarea id="parentPersonalAnswer"></textarea></div><button class="secondary" id="unlockParentHint">Afficher l’indice</button></div><div id="parentHintBox" class="hintbox hidden"><strong>Indice :</strong> ${esc(m.hint)}</div><div id="parentResearch" class="searchbox hidden"><strong>Recherche ensemble obligatoire :</strong> ${esc(m.research)}</div><button class="primary hidden" id="sendParentAnswer">Envoyer la réponse</button><div id="generatedArea"></div>`);
  let correct=false,attempts=0;
  document.getElementById("parentCategory").onchange=()=>{const choices=PERSONAL_PROMPTS[document.getElementById("parentCategory").value]||[];document.getElementById("parentPrompt").value=choices.length?choices[Math.floor(Math.random()*choices.length)]:""};
  document.getElementById("checkParentPuzzle").onclick=()=>{correct=matchesAnswer(m,document.getElementById("parentPuzzleAnswer").value);if(correct){feedback("Bonne réponse.");document.getElementById("sendParentAnswer").classList.remove("hidden")}else{attempts++;document.getElementById("parentHintGate").classList.remove("hidden");if(attempts>=2)document.getElementById("parentResearch").classList.remove("hidden");feedback(attempts===1?"Un indice peut être débloqué.":"La recherche devra être faite ensemble.","error")}};
