@@ -297,6 +297,13 @@ const FINAL_META=[
  {salt:"F2",hashes:["1EBP4UU"]},
  {salt:"F3",hashes:["13VSUQT"]}
 ];
+const TOGETHER_META={
+ 1:{parentHalf:"TOUR",teenHalf:"CODEE",salt:"T1",hashes:["0AOHNS0","0QFGYAO"]},
+ 3:{parentHalf:"CINQ",teenHalf:"OBJETS",salt:"T3",hashes:["11XEZXS","19FH73U"]},
+ 5:{parentHalf:"PONT",teenHalf:"SOLIDE",salt:"T5",hashes:["01NK7FB","0671009"]},
+ 7:{parentHalf:"MEMOIRE",teenHalf:"VIVE",salt:"T7",hashes:["1VCUOZ8","05JKOAK"]},
+ 9:{parentHalf:"PISTE",teenHalf:"OUVERTE",salt:"T9",hashes:["04MU7TH","0HFYUHZ"]}
+};
 const PERSONAL_PROMPTS={
  "Souvenir":["Quel souvenir te fait encore rire ?","Quel moment aimerais-tu revivre une fois ?"],
  "Peur":["Quelle petite peur aimerais-tu réussir à dépasser ?","Qu’est-ce qui t’impressionne plus que tu ne le montres ?"],
@@ -568,6 +575,14 @@ function personalHintBlock(i,hintText){
  <button class="secondary" id="unlockHint">Afficher l’indice</button></div>`
 }
 function remoteLevel(i){const m=REMOTE_META[i];return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>`}
+function togetherGate(i,activityHtml){
+ const t=TOGETHER_META[i];
+ if(!t||roleData().localAnswers["togetherUnlocked"+i])return activityHtml;
+ if(state.activeRole==="parent"){
+  return `<p class="muted" style="margin-top:-4px">Vue parent : ta moitié du code.</p><div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.parentHalf)}</div><p>Retrouve ${esc(state.teen||"le jeune")}, échangez vos moitiés à voix haute, et fais-lui taper le code complet sur son téléphone pour débloquer l’activité.</p>`
+ }
+ return `<div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.teenHalf)}</div><p>Demande à ${esc(state.parentName||"ton parent")} sa moitié du code (visible sur son téléphone), assemblez-les, puis tape le code complet ci-dessous.</p><div class="field"><label for="togetherCode">Code complet</label><input id="togetherCode" placeholder="Les deux moitiés assemblées"></div><button class="primary" id="checkTogether">Débloquer l’activité</button>`
+}
 function parentOwnAnswer(i){
  const stage=i+1,m=PARENT_META[stage];
  if(!m)return `<div class="notice">Pas d’énigme parent pour ce niveau.</div>`;
@@ -589,15 +604,15 @@ function openLevel(i){
  bindLevel(i,isParentView)
 }
 function level1(){return remoteLevel(0)}
-function level2(){return `<p>Construisez ensemble la plus haute tour possible avec dix objets.</p><div class="offline"><strong>📵 Sans téléphone pendant 5 minutes.</strong><p>Choisissez les objets, lancez le chrono, posez les téléphones et construisez.</p><button class="secondary" id="startTimer">Lancer 5 minutes</button><div class="timer hidden" id="timer">05:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`}
+function level2(){return togetherGate(1,`<p>Construisez ensemble la plus haute tour possible avec dix objets.</p><div class="offline"><strong>📵 Sans téléphone pendant 5 minutes.</strong><p>Choisissez les objets, lancez le chrono, posez les téléphones et construisez.</p><button class="secondary" id="startTimer">Lancer 5 minutes</button><div class="timer hidden" id="timer">05:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level3(){return remoteLevel(2)}
-function level4(){return `<p>Trouvez ensemble cinq objets : un doux, un lourd, un coloré, un utile et un drôle.</p><div class="offline"><strong>📵 7 minutes sans téléphone.</strong><p>À la fin, chacun explique seulement un choix.</p><button class="secondary" id="startTimer">Lancer 7 minutes</button><div class="timer hidden" id="timer">07:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`}
+function level4(){return togetherGate(3,`<p>Trouvez ensemble cinq objets : un doux, un lourd, un coloré, un utile et un drôle.</p><div class="offline"><strong>📵 7 minutes sans téléphone.</strong><p>À la fin, chacun explique seulement un choix.</p><button class="secondary" id="startTimer">Lancer 7 minutes</button><div class="timer hidden" id="timer">07:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level5(){return remoteLevel(4)}
-function level6(){return `<p>Construisez un pont entre deux livres avec seulement deux feuilles de papier, du ruban adhésif et un petit objet à faire traverser.</p><div class="offline"><strong>Sans téléphone pendant dix minutes.</strong></div><div class="field"><label for="bridgeResult">Résultat</label><select id="bridgeResult"><option value="">Choisir…</option><option>Le pont a tenu</option><option>Le pont a presque tenu</option><option>Nous avons essayé plusieurs solutions</option></select></div><button class="primary" id="validateLevel">Valider</button>`}
+function level6(){return togetherGate(5,`<p>Construisez un pont entre deux livres avec seulement deux feuilles de papier, du ruban adhésif et un petit objet à faire traverser.</p><div class="offline"><strong>Sans téléphone pendant dix minutes.</strong></div><div class="field"><label for="bridgeResult">Résultat</label><select id="bridgeResult"><option value="">Choisir…</option><option>Le pont a tenu</option><option>Le pont a presque tenu</option><option>Nous avons essayé plusieurs solutions</option></select></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level7(){return remoteLevel(6)}
-function level8(){return `<p>Préparez ensemble une boisson ou un goûter simple, puis partagez-le.</p><div class="offline"><strong>📵 20 minutes sans téléphone.</strong><p>Le choix doit être réaliste et réalisable avec ce qui est disponible.</p><button class="secondary" id="startTimer">Lancer 20 minutes</button><div class="timer hidden" id="timer">20:00</div><div id="timerDone" class="success hidden">Moment terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`}
+function level8(){return togetherGate(7,`<p>Préparez ensemble une boisson ou un goûter simple, puis partagez-le.</p><div class="offline"><strong>📵 20 minutes sans téléphone.</strong><p>Le choix doit être réaliste et réalisable avec ce qui est disponible.</p><button class="secondary" id="startTimer">Lancer 20 minutes</button><div class="timer hidden" id="timer">20:00</div><div id="timerDone" class="success hidden">Moment terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level9(){return remoteLevel(8)}
-function level10(){return `<p>Faites une sortie de 20 à 45 minutes avec la mère, le père ou les deux parents.</p><div class="offline"><strong>Téléphones rangés pour tout le monde.</strong></div><p>Retrouvez quelque chose de rouge, un mot de plus de huit lettres et un objet dont vous ignorez l’utilité.</p><div class="field"><label for="miniTrip">Quel objet vous a le plus intrigués ?</label><input id="miniTrip" maxlength="100"></div><button class="primary" id="validateLevel">Valider</button>`}
+function level10(){return togetherGate(9,`<p>Faites une sortie de 20 à 45 minutes avec la mère, le père ou les deux parents.</p><div class="offline"><strong>Téléphones rangés pour tout le monde.</strong></div><p>Retrouvez quelque chose de rouge, un mot de plus de huit lettres et un objet dont vous ignorez l’utilité.</p><div class="field"><label for="miniTrip">Quel objet vous a le plus intrigués ?</label><input id="miniTrip" maxlength="100"></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level11(){return remoteLevel(10)}
 function level12(){return `<p>Résolvez ensemble les trois mini-énigmes finales.</p>
 <div class="notice">Chaque joueur peut proposer une réponse. Une recherche commune reste autorisée après l’utilisation d’un indice.</div>
@@ -630,9 +645,16 @@ function bindLevel(i,isParentView){
   }
   document.getElementById("checkRemote").onclick=()=>{const ok=matchesAnswer(REMOTE_META[i],document.getElementById("remoteAnswer").value);if(ok){roleData().localAnswers["remoteCorrect"+i]=true;save();feedback("Bonne réponse. Il reste à valider le relais.")}else{roleData().attempts[i]=(roleData().attempts[i]||0)+1;save();const gate=document.getElementById("personalGate");if(gate)gate.classList.remove("hidden");if(roleData().attempts[i]>=2&&roleData().hints[i])document.getElementById("researchTogether").classList.remove("hidden");feedback(roleData().attempts[i]===1?"Réponse incorrecte. Un indice peut être débloqué.":"Toujours incorrect. La recherche doit maintenant être faite ensemble.","error")}};
  }
+ const checkTogether=document.getElementById("checkTogether");
+ if(checkTogether)checkTogether.onclick=()=>{
+  const t=TOGETHER_META[i];
+  if(t&&matchesAnswer(t,document.getElementById("togetherCode").value)){roleData().localAnswers["togetherUnlocked"+i]=true;save();openLevel(i)}
+  else feedback("Code incorrect. Vérifiez les deux moitiés avec votre enfant/parent.","error")
+ };
  const start=document.getElementById("startTimer");
  if(start){const minutes=i===1?5:i===3?7:20;if(roleData().localAnswers["timer"+minutes+"done"]){start.classList.add("hidden");document.getElementById("timerDone").classList.remove("hidden")}else start.onclick=()=>startTimer(minutes)}
- document.getElementById("validateLevel").onclick=()=>{
+ const validateBtn=document.getElementById("validateLevel");
+ if(validateBtn)validateBtn.onclick=()=>{
   if(LEVELS[i].mode==="remote"){
    const correct=matchesAnswer(REMOTE_META[i],document.getElementById("remoteAnswer").value)||roleData().localAnswers["remoteCorrect"+i];
    if(!correct){feedback("La réponse principale doit être correcte.","error");return}
