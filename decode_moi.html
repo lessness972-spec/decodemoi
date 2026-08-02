@@ -205,7 +205,7 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
     <div>
       <div class="kicker">Partie principale</div>
       <h2 style="margin:5px 0 7px" id="teamTitle"></h2>
-      <div class="pills"><span class="pill" id="playersPill"></span><span class="pill profile-pill" id="rolePill" title="Changer de profil"></span><span class="pill" id="parentPresencePill"></span></div>
+      <div class="pills"><span class="pill" id="playersPill"></span><span class="pill profile-pill" id="rolePill" title="Changer de profil"></span><span class="pill" id="otherPresencePill"></span></div>
     </div>
     <div class="room-tools"><div><div class="muted" style="font-size:.78rem">CODE RELAIS</div><div class="room-code" id="roomCode"></div></div><button class="manage-dot" id="manageBtn" aria-label="Gérer la partie" title="Partie et profils">•••</button></div>
   </div>
@@ -518,7 +518,7 @@ function renderMain(){
  document.getElementById("teamTitle").textContent=state.team;
  document.getElementById("playersPill").textContent=state.teen+" + "+state.parentName;
  document.getElementById("rolePill").textContent="Profil : "+profileName();
- document.getElementById("parentPresencePill").textContent=state.parentName+" : "+presenceLabel(state.parentLastSeen);
+ document.getElementById("otherPresencePill").textContent=state.activeRole==="parent"?(state.teen||"Le jeune")+" : "+presenceLabel(state.teenLastSeen):(state.parentName||"Le parent")+" : "+presenceLabel(state.parentLastSeen);
  document.getElementById("roomCode").textContent=state.room;
  document.getElementById("progressBar").style.width=(done/LEVELS.length*100)+"%";
  document.getElementById("progressText").textContent=done+" niveau"+(done>1?"x":"")+" validé"+(done>1?"s":"")+" sur "+LEVELS.length;
