@@ -18,6 +18,15 @@ function mergeBoolMap(a, b) {
   Object.keys(b || {}).forEach((k) => { if (b[k]) out[k] = true; });
   return out;
 }
+function mergeSharedAnswers(a, b) {
+  const out = { ...(a || {}) };
+  Object.keys(b || {}).forEach((k) => {
+    const existing = out[k] || {};
+    const incoming = b[k] || {};
+    out[k] = { teen: incoming.teen || existing.teen || "", parent: incoming.parent || existing.parent || "" };
+  });
+  return out;
+}
 function mergeRoom(existing, incoming) {
   const base = existing || {};
   return {
@@ -28,6 +37,7 @@ function mergeRoom(existing, incoming) {
     completed: mergeBoolArray(base.completed, incoming.completed),
     parentAnswers: mergeBoolMap(base.parentAnswers, incoming.parentAnswers),
     rewards: { ...(incoming.rewards || {}), ...(base.rewards || {}) },
+    sharedAnswers: mergeSharedAnswers(base.sharedAnswers, incoming.sharedAnswers),
     teenLastSeen: Math.max(Number(base.teenLastSeen) || 0, Number(incoming.teenLastSeen) || 0),
     parentLastSeen: Math.max(Number(base.parentLastSeen) || 0, Number(incoming.parentLastSeen) || 0),
     updatedAt: Date.now()

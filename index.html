@@ -311,6 +311,14 @@ const PERSONAL_PROMPTS={
  "Regret":["Quelle petite chose aurais-tu aimé faire autrement ?","Quelle occasion manquée aimerais-tu retrouver ?"],
  "Secret léger":["Quelle habitude amusante peu de personnes connaissent ?","Quel goût, film ou musique apprécies-tu sans toujours l’avouer ?"]
 };
+const SHARED_PROMPT_BY_LEVEL={
+ 0:{category:"Souvenir",question:"Quel souvenir te fait encore rire ?"},
+ 2:{category:"Rêve",question:"Quel projet aimerais-tu vraiment réaliser ?"},
+ 4:{category:"Peur",question:"Quelle petite peur aimerais-tu réussir à dépasser ?"},
+ 6:{category:"Secret léger",question:"Quelle habitude amusante peu de personnes connaissent ?"},
+ 8:{category:"Regret",question:"Quelle petite chose aurais-tu aimé faire autrement ?"},
+ 10:{category:"Souvenir",question:"Quel moment aimerais-tu revivre une fois ?"}
+};
 const REWARDS=[
  {need:3,badge:"3 niveaux",title:"Pause duo",activities:["Goûter choisi par le jeune","Jeu de cartes ou de société","Petite balade","Préparer une boisson ou un dessert","Activité personnalisée"]},
  {need:6,badge:"6 niveaux",title:"Sortie courte",activities:["Balade dans un parc","Déjeuner ou goûter à deux ou à trois","Médiathèque ou librairie","Terrain de sport ou activité gratuite","Activité personnalisée"]},
@@ -320,7 +328,7 @@ const REWARDS=[
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
-const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
  const result=Array(LEVELS.length).fill(false);
@@ -334,6 +342,7 @@ function sanitizeGame(x={}){
  game.rewards={...(x.rewards||{})};
  game.teenLastSeen=Number(x.teenLastSeen)||0;
  game.parentLastSeen=Number(x.parentLastSeen)||0;
+ game.sharedAnswers={...(x.sharedAnswers||{})};
  game.activeRole=x.activeRole==="parent"?"parent":"teen";
  game.profileData={parent:{...emptyProfile(),...(x.profileData?.parent||{})},teen:{...emptyProfile(),...(x.profileData?.teen||{})}};
  if(!x.profileData){
@@ -392,7 +401,7 @@ function decodeInvite(code){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");w
 function appLink(params){return location.origin+location.pathname+"?"+params}
 
 function roomApiUrl(room){return location.origin+"/api/room/"+encodeURIComponent(room)}
-function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
+function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,sharedAnswers:state.sharedAnswers,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
 function presenceLabel(ts){
  if(!ts)return "jamais connecté";
  const diff=Date.now()-ts;
@@ -409,6 +418,10 @@ function mergeServerState(server){
  if(Array.isArray(server.completed))server.completed.forEach((v,i)=>{if(v&&!state.completed[i]){state.completed[i]=true;changed=true}});
  if(server.parentAnswers)Object.keys(server.parentAnswers).forEach(k=>{if(server.parentAnswers[k]&&!state.parentAnswers[k]){state.parentAnswers[k]=true;changed=true}});
  if(server.rewards)Object.keys(server.rewards).forEach(k=>{if(!state.rewards[k]&&server.rewards[k]){state.rewards[k]=server.rewards[k];changed=true}});
+ if(server.sharedAnswers)Object.keys(server.sharedAnswers).forEach(k=>{
+  const s=server.sharedAnswers[k]||{},cur=state.sharedAnswers[k]||{};
+  if((s.teen&&!cur.teen)||(s.parent&&!cur.parent)){state.sharedAnswers[k]={teen:s.teen||cur.teen||"",parent:s.parent||cur.parent||""};changed=true}
+ });
  if(typeof server.parentLastSeen==="number"&&server.parentLastSeen>state.parentLastSeen){state.parentLastSeen=server.parentLastSeen;presenceChanged=true}
  if(typeof server.teenLastSeen==="number"&&server.teenLastSeen>state.teenLastSeen){state.teenLastSeen=server.teenLastSeen;presenceChanged=true}
  if(changed){
@@ -574,7 +587,14 @@ function personalHintBlock(i,hintText){
  <div class="field"><label for="personalAnswer">Réponse ou JOKER</label><textarea id="personalAnswer"></textarea></div>
  <button class="secondary" id="unlockHint">Afficher l’indice</button></div>`
 }
-function remoteLevel(i){const m=REMOTE_META[i];return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>`}
+function sharedPromptBlock(i,mineVal,otherVal,otherName){
+ const sp=SHARED_PROMPT_BY_LEVEL[i];
+ if(!sp)return "";
+ if(mineVal&&otherVal)return `<hr><div class="notice"><strong>💬 ${esc(sp.category)}</strong><p>${esc(sp.question)}</p><p><strong>Toi :</strong> ${esc(mineVal)}</p><p><strong>${esc(otherName)} :</strong> ${esc(otherVal)}</p></div>`;
+ if(mineVal&&!otherVal)return `<hr><div class="notice"><strong>💬 ${esc(sp.category)}</strong><p>${esc(sp.question)}</p><p class="muted">Réponse enregistrée. Vous verrez celle de ${esc(otherName)} dès qu’il/elle aura répondu aussi.</p></div>`;
+ return `<hr><div class="notice"><strong>💬 Petit à-côté (facultatif) :</strong> ${esc(sp.question)}</div><div class="field"><label for="sharedAnswerInput">Ta réponse</label><textarea id="sharedAnswerInput" placeholder="Juste pour vous deux, ça n’empêche pas de valider le niveau"></textarea></div><button class="secondary" id="submitSharedAnswer">Envoyer ma réponse</button>`
+}
+function remoteLevel(i){const m=REMOTE_META[i],sa=state.sharedAnswers[i]||{};return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>${sharedPromptBlock(i,sa.teen,sa.parent,state.parentName||"le parent")}`}
 function togetherGate(i,activityHtml){
  const t=TOGETHER_META[i];
  if(!t||roleData().localAnswers["togetherUnlocked"+i])return activityHtml;
@@ -584,10 +604,10 @@ function togetherGate(i,activityHtml){
  return `<div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.teenHalf)}</div><p>Demande à ${esc(state.parentName||"ton parent")} sa moitié du code (visible sur son téléphone), assemblez-les, puis tape le code complet ci-dessous.</p><div class="field"><label for="togetherCode">Code complet</label><input id="togetherCode" placeholder="Les deux moitiés assemblées"></div><button class="primary" id="checkTogether">Débloquer l’activité</button>`
 }
 function parentOwnAnswer(i){
- const stage=i+1,m=PARENT_META[stage];
- if(!m)return `<div class="notice">Pas d’énigme parent pour ce niveau.</div>`;
- if(state.parentAnswers[i])return `<div class="success"><strong>Tu as déjà répondu à cette énigme ✓</strong></div><p class="muted">${esc(state.teen||"Le jeune")} peut valider ce niveau depuis son appareil.</p>`;
- return `<p class="muted" style="margin-top:-4px">Vue parent : c’est ta question, pas celle de ${esc(state.teen||"le jeune")}.</p><p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkParentOwn">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p></div><button class="primary hidden" id="submitParentOwn">Confirmer la réponse</button>`
+ const stage=i+1,m=PARENT_META[stage],sa=state.sharedAnswers[i]||{},shared=sharedPromptBlock(i,sa.parent,sa.teen,state.teen||"le jeune");
+ if(!m)return `<div class="notice">Pas d’énigme parent pour ce niveau.</div>${shared}`;
+ if(state.parentAnswers[i])return `<div class="success"><strong>Tu as déjà répondu à cette énigme ✓</strong></div><p class="muted">${esc(state.teen||"Le jeune")} peut valider ce niveau depuis son appareil.</p>${shared}`;
+ return `<p class="muted" style="margin-top:-4px">Vue parent : c’est ta question, pas celle de ${esc(state.teen||"le jeune")}.</p><p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkParentOwn">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p></div><button class="primary hidden" id="submitParentOwn">Confirmer la réponse</button>${shared}`
 }
 
 function relayInput(i){
@@ -641,9 +661,13 @@ function bindLevel(i,isParentView){
    if(check)check.onclick=()=>{const ok=matchesAnswer(m,document.getElementById("remoteAnswer").value);if(ok){feedback("Bonne réponse.");document.getElementById("submitParentOwn").classList.remove("hidden")}else{roleData().attempts[i]=(roleData().attempts[i]||0)+1;save();const gate=document.getElementById("personalGate");if(gate)gate.classList.remove("hidden");if(roleData().attempts[i]>=2&&roleData().hints[i])document.getElementById("researchTogether").classList.remove("hidden");feedback(roleData().attempts[i]===1?"Réponse incorrecte. Un indice peut être débloqué.":"Toujours incorrect. La recherche doit maintenant être faite ensemble.","error")}};
    const submit=document.getElementById("submitParentOwn");
    if(submit)submit.onclick=()=>{submit.disabled=true;state.parentAnswers[i]=true;state.parentLastSeen=Date.now();save();feedback("Réponse enregistrée. "+(state.teen||"Le jeune")+" peut valider ce niveau chez lui.");openLevel(i)};
+   const submitSharedP=document.getElementById("submitSharedAnswer");
+   if(submitSharedP)submitSharedP.onclick=()=>{const val=document.getElementById("sharedAnswerInput").value.trim();if(!val){feedback("Écris une réponse (ou laisse tomber pour cette fois).","error");return}state.sharedAnswers[i]=state.sharedAnswers[i]||{};state.sharedAnswers[i].parent=val;state.parentLastSeen=Date.now();save();openLevel(i)};
    return
   }
   document.getElementById("checkRemote").onclick=()=>{const ok=matchesAnswer(REMOTE_META[i],document.getElementById("remoteAnswer").value);if(ok){roleData().localAnswers["remoteCorrect"+i]=true;save();feedback("Bonne réponse. Il reste à valider le relais.")}else{roleData().attempts[i]=(roleData().attempts[i]||0)+1;save();const gate=document.getElementById("personalGate");if(gate)gate.classList.remove("hidden");if(roleData().attempts[i]>=2&&roleData().hints[i])document.getElementById("researchTogether").classList.remove("hidden");feedback(roleData().attempts[i]===1?"Réponse incorrecte. Un indice peut être débloqué.":"Toujours incorrect. La recherche doit maintenant être faite ensemble.","error")}};
+  const submitSharedT=document.getElementById("submitSharedAnswer");
+  if(submitSharedT)submitSharedT.onclick=()=>{const val=document.getElementById("sharedAnswerInput").value.trim();if(!val){feedback("Écris une réponse (ou laisse tomber pour cette fois).","error");return}state.sharedAnswers[i]=state.sharedAnswers[i]||{};state.sharedAnswers[i].teen=val;save();openLevel(i)};
  }
  const checkTogether=document.getElementById("checkTogether");
  if(checkTogether)checkTogether.onclick=()=>{
@@ -717,8 +741,8 @@ async function openParentAnswer(room){
  openParentRelay(room,stage,server,presence)
 }
 function openParentRelay(room,stage,server,presence){
- const m=PARENT_META[stage];
- openModal("Relais du niveau "+stage,"Relais",`${presence||""}<p>${esc(m.question)}</p><div class="field"><label for="parentPuzzleAnswer">Réponse</label><input id="parentPuzzleAnswer"></div><button class="secondary" id="checkParentPuzzle">Vérifier</button><div id="parentHintGate" class="hidden"><div class="notice"><strong>Indice disponible :</strong> réponds à une question personnelle ou utilise JOKER.</div><div class="field"><label for="parentCategory">Catégorie</label><select id="parentCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div><div class="field"><label for="parentPrompt">Question</label><input id="parentPrompt" readonly></div><div class="field"><label for="parentPersonalAnswer">Réponse ou JOKER</label><textarea id="parentPersonalAnswer"></textarea></div><button class="secondary" id="unlockParentHint">Afficher l’indice</button></div><div id="parentHintBox" class="hintbox hidden"><strong>Indice :</strong> ${esc(m.hint)}</div><div id="parentResearch" class="searchbox hidden"><strong>Recherche ensemble obligatoire :</strong> ${esc(m.research)}</div><button class="primary hidden" id="sendParentAnswer">Envoyer la réponse</button><div id="generatedArea"></div>`);
+ const m=PARENT_META[stage],i=stage-1,sa=(server.sharedAnswers&&server.sharedAnswers[i])||{},shared=sharedPromptBlock(i,sa.parent,sa.teen,server.teen||"le jeune");
+ openModal("Relais du niveau "+stage,"Relais",`${presence||""}<p>${esc(m.question)}</p><div class="field"><label for="parentPuzzleAnswer">Réponse</label><input id="parentPuzzleAnswer"></div><button class="secondary" id="checkParentPuzzle">Vérifier</button><div id="parentHintGate" class="hidden"><div class="notice"><strong>Indice disponible :</strong> réponds à une question personnelle ou utilise JOKER.</div><div class="field"><label for="parentCategory">Catégorie</label><select id="parentCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div><div class="field"><label for="parentPrompt">Question</label><input id="parentPrompt" readonly></div><div class="field"><label for="parentPersonalAnswer">Réponse ou JOKER</label><textarea id="parentPersonalAnswer"></textarea></div><button class="secondary" id="unlockParentHint">Afficher l’indice</button></div><div id="parentHintBox" class="hintbox hidden"><strong>Indice :</strong> ${esc(m.hint)}</div><div id="parentResearch" class="searchbox hidden"><strong>Recherche ensemble obligatoire :</strong> ${esc(m.research)}</div><button class="primary hidden" id="sendParentAnswer">Envoyer la réponse</button><div id="generatedArea"></div>${shared}`);
  let correct=false,attempts=0;
  document.getElementById("parentCategory").onchange=()=>{const choices=PERSONAL_PROMPTS[document.getElementById("parentCategory").value]||[];document.getElementById("parentPrompt").value=choices.length?choices[Math.floor(Math.random()*choices.length)]:""};
  document.getElementById("checkParentPuzzle").onclick=()=>{correct=matchesAnswer(m,document.getElementById("parentPuzzleAnswer").value);if(correct){feedback("Bonne réponse.");document.getElementById("sendParentAnswer").classList.remove("hidden")}else{attempts++;document.getElementById("parentHintGate").classList.remove("hidden");if(attempts>=2)document.getElementById("parentResearch").classList.remove("hidden");feedback(attempts===1?"Un indice peut être débloqué.":"La recherche devra être faite ensemble.","error")}};
@@ -726,7 +750,7 @@ function openParentRelay(room,stage,server,presence){
  document.getElementById("sendParentAnswer").onclick=async()=>{
   if(!correct){feedback("La réponse doit être correcte.","error");return}
   const btn=document.getElementById("sendParentAnswer");btn.disabled=true;
-  const payload={room,team:"",teen:"",parentName:"",completed:Array(LEVELS.length).fill(false),parentAnswers:{[stage-1]:true},rewards:{}};
+  const payload={room,team:"",teen:"",parentName:"",completed:Array(LEVELS.length).fill(false),parentAnswers:{[i]:true},rewards:{}};
   try{
    const res=await fetch(roomApiUrl(room),{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
    if(!res.ok)throw new Error("http "+res.status);
@@ -734,6 +758,22 @@ function openParentRelay(room,stage,server,presence){
   }catch(e){
    feedback("Impossible d’envoyer la réponse : vérifiez votre connexion internet et réessayez.","error");
    btn.disabled=false
+  }
+ };
+ const submitSharedParent=document.getElementById("submitSharedAnswer");
+ if(submitSharedParent)submitSharedParent.onclick=async()=>{
+  const val=document.getElementById("sharedAnswerInput").value.trim();
+  if(!val){feedback("Écris une réponse (ou laisse tomber pour cette fois).","error");return}
+  submitSharedParent.disabled=true;
+  const payload={room,team:"",teen:"",parentName:"",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},sharedAnswers:{[i]:{parent:val}}};
+  try{
+   const res=await fetch(roomApiUrl(room),{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
+   if(!res.ok)throw new Error("http "+res.status);
+   const updated=await res.json();
+   openParentRelay(room,stage,updated,presence)
+  }catch(e){
+   feedback("Impossible d’envoyer la réponse : vérifiez votre connexion internet et réessayez.","error");
+   submitSharedParent.disabled=false
   }
  }
 }
