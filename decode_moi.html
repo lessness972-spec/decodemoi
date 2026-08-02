@@ -385,7 +385,7 @@ function decodeInvite(code){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");w
 function appLink(params){return location.origin+location.pathname+"?"+params}
 
 function roomApiUrl(room){return location.origin+"/api/room/"+encodeURIComponent(room)}
-function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,teenLastSeen:Date.now()}}
+function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
 function presenceLabel(ts){
  if(!ts)return "jamais connecté";
  const diff=Date.now()-ts;
@@ -405,13 +405,12 @@ function mergeServerState(server){
  if(typeof server.parentLastSeen==="number"&&server.parentLastSeen>state.parentLastSeen){state.parentLastSeen=server.parentLastSeen;presenceChanged=true}
  if(typeof server.teenLastSeen==="number"&&server.teenLastSeen>state.teenLastSeen){state.teenLastSeen=server.teenLastSeen;presenceChanged=true}
  if(changed){
-  save()
- }else if(presenceChanged&&state.room){
-  state=sanitizeGame(state);store.games[state.room]=state;store.activeRoom=state.room;localStorage.setItem(STORE_KEY,JSON.stringify(store))
- }
- if(changed||presenceChanged){
+  save();
   if(!mainGame.classList.contains("hidden"))renderMain();
   if(currentOpenLevel!==null&&LEVELS[currentOpenLevel]&&LEVELS[currentOpenLevel].mode==="remote")openLevel(currentOpenLevel)
+ }else if(presenceChanged&&state.room){
+  state=sanitizeGame(state);store.games[state.room]=state;store.activeRoom=state.room;localStorage.setItem(STORE_KEY,JSON.stringify(store));
+  if(currentOpenLevel===null&&!mainGame.classList.contains("hidden"))renderMain()
  }
  return changed
 }
@@ -498,7 +497,7 @@ document.addEventListener("click",e=>{
  if(e.target?.id==="confirmCreate"){
   const team=document.getElementById("newTeam").value.trim(),teen=document.getElementById("newTeen").value.trim(),parent=document.getElementById("newParent").value.trim();
   if(!team||!teen||!parent){feedback("Complète les trois champs.","error");return}
-  state=structuredClone(defaultState);state.created=true;state.team=team;state.teen=teen;state.parentName=parent;state.activeRole="teen";state.room=randomRoom();save();closeModal();showMain();openInviteChild()
+  state=structuredClone(defaultState);state.created=true;state.team=team;state.teen=teen;state.parentName=parent;state.activeRole="teen";state.room=randomRoom();state.parentLastSeen=Date.now();save();closeModal();showMain();openInviteChild()
  }
 });
 document.getElementById("joinBtn").onclick=showParent;document.getElementById("backHomeBtn").onclick=showHome;
