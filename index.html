@@ -328,7 +328,7 @@ const REWARDS=[
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
-const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
  const result=Array(LEVELS.length).fill(false);
@@ -343,6 +343,8 @@ function sanitizeGame(x={}){
  game.teenLastSeen=Number(x.teenLastSeen)||0;
  game.parentLastSeen=Number(x.parentLastSeen)||0;
  game.sharedAnswers={...(x.sharedAnswers||{})};
+ game.timerStarts={...(x.timerStarts||{})};
+ game.togetherUnlocked={...(x.togetherUnlocked||{})};
  game.activeRole=x.activeRole==="parent"?"parent":"teen";
  game.profileData={parent:{...emptyProfile(),...(x.profileData?.parent||{})},teen:{...emptyProfile(),...(x.profileData?.teen||{})}};
  if(!x.profileData){
@@ -401,7 +403,7 @@ function decodeInvite(code){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");w
 function appLink(params){return location.origin+location.pathname+"?"+params}
 
 function roomApiUrl(room){return location.origin+"/api/room/"+encodeURIComponent(room)}
-function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,sharedAnswers:state.sharedAnswers,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
+function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,sharedAnswers:state.sharedAnswers,timerStarts:state.timerStarts,togetherUnlocked:state.togetherUnlocked,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
 function presenceLabel(ts){
  if(!ts)return "jamais connecté";
  const diff=Date.now()-ts;
@@ -415,19 +417,25 @@ let currentOpenLevel=null;
 function mergeServerState(server){
  if(!server||typeof server!=="object"||!state.created)return false;
  let changed=false,presenceChanged=false;
- if(Array.isArray(server.completed))server.completed.forEach((v,i)=>{if(v&&!state.completed[i]){state.completed[i]=true;changed=true}});
- if(server.parentAnswers)Object.keys(server.parentAnswers).forEach(k=>{if(server.parentAnswers[k]&&!state.parentAnswers[k]){state.parentAnswers[k]=true;changed=true}});
+ const dirty=new Set();
+ if(Array.isArray(server.completed))server.completed.forEach((v,i)=>{if(v&&!state.completed[i]){state.completed[i]=true;changed=true;dirty.add(i)}});
+ if(server.parentAnswers)Object.keys(server.parentAnswers).forEach(k=>{if(server.parentAnswers[k]&&!state.parentAnswers[k]){state.parentAnswers[k]=true;changed=true;dirty.add(Number(k))}});
  if(server.rewards)Object.keys(server.rewards).forEach(k=>{if(!state.rewards[k]&&server.rewards[k]){state.rewards[k]=server.rewards[k];changed=true}});
  if(server.sharedAnswers)Object.keys(server.sharedAnswers).forEach(k=>{
   const s=server.sharedAnswers[k]||{},cur=state.sharedAnswers[k]||{};
-  if((s.teen&&!cur.teen)||(s.parent&&!cur.parent)){state.sharedAnswers[k]={teen:s.teen||cur.teen||"",parent:s.parent||cur.parent||""};changed=true}
+  if((s.teen&&!cur.teen)||(s.parent&&!cur.parent)){state.sharedAnswers[k]={teen:s.teen||cur.teen||"",parent:s.parent||cur.parent||""};changed=true;dirty.add(Number(k))}
  });
+ if(server.timerStarts)Object.keys(server.timerStarts).forEach(k=>{
+  const sv=server.timerStarts[k];
+  if(sv&&(!state.timerStarts[k]||sv<state.timerStarts[k])){state.timerStarts[k]=sv;changed=true;dirty.add(Number(k))}
+ });
+ if(server.togetherUnlocked)Object.keys(server.togetherUnlocked).forEach(k=>{if(server.togetherUnlocked[k]&&!state.togetherUnlocked[k]){state.togetherUnlocked[k]=true;changed=true;dirty.add(Number(k))}});
  if(typeof server.parentLastSeen==="number"&&server.parentLastSeen>state.parentLastSeen){state.parentLastSeen=server.parentLastSeen;presenceChanged=true}
  if(typeof server.teenLastSeen==="number"&&server.teenLastSeen>state.teenLastSeen){state.teenLastSeen=server.teenLastSeen;presenceChanged=true}
  if(changed){
   save();
   if(!mainGame.classList.contains("hidden"))renderMain();
-  if(currentOpenLevel!==null&&LEVELS[currentOpenLevel]&&LEVELS[currentOpenLevel].mode==="remote")openLevel(currentOpenLevel)
+  if(currentOpenLevel!==null&&dirty.has(currentOpenLevel))openLevel(currentOpenLevel)
  }else if(presenceChanged&&state.room){
   state=sanitizeGame(state);store.games[state.room]=state;store.activeRoom=state.room;localStorage.setItem(STORE_KEY,JSON.stringify(store));
   if(currentOpenLevel===null&&!mainGame.classList.contains("hidden"))renderMain()
@@ -597,7 +605,7 @@ function sharedPromptBlock(i,mineVal,otherVal,otherName){
 function remoteLevel(i){const m=REMOTE_META[i],sa=state.sharedAnswers[i]||{};return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>${sharedPromptBlock(i,sa.teen,sa.parent,state.parentName||"le parent")}`}
 function togetherGate(i,activityHtml){
  const t=TOGETHER_META[i];
- if(!t||roleData().localAnswers["togetherUnlocked"+i])return activityHtml;
+ if(!t||(state.togetherUnlocked&&state.togetherUnlocked[i]))return activityHtml;
  if(state.activeRole==="parent"){
   return `<p class="muted" style="margin-top:-4px">Vue parent : ta moitié du code.</p><div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.parentHalf)}</div><p>Retrouve ${esc(state.teen||"le jeune")}, échangez vos moitiés à voix haute, et fais-lui taper le code complet sur son téléphone pour débloquer l’activité.</p>`
  }
@@ -628,7 +636,7 @@ function level2(){return togetherGate(1,`<p>Construisez ensemble la plus haute t
 function level3(){return remoteLevel(2)}
 function level4(){return togetherGate(3,`<p>Trouvez ensemble cinq objets : un doux, un lourd, un coloré, un utile et un drôle.</p><div class="offline"><strong>📵 7 minutes sans téléphone.</strong><p>À la fin, chacun explique seulement un choix.</p><button class="secondary" id="startTimer">Lancer 7 minutes</button><div class="timer hidden" id="timer">07:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level5(){return remoteLevel(4)}
-function level6(){return togetherGate(5,`<p>Construisez un pont entre deux livres avec seulement deux feuilles de papier, du ruban adhésif et un petit objet à faire traverser.</p><div class="offline"><strong>Sans téléphone pendant dix minutes.</strong></div><div class="field"><label for="bridgeResult">Résultat</label><select id="bridgeResult"><option value="">Choisir…</option><option>Le pont a tenu</option><option>Le pont a presque tenu</option><option>Nous avons essayé plusieurs solutions</option></select></div><button class="primary" id="validateLevel">Valider</button>`)}
+function level6(){return togetherGate(5,`<p>Construisez un pont entre deux livres avec seulement deux feuilles de papier, du ruban adhésif et un petit objet à faire traverser.</p><div class="offline"><strong>📵 Sans téléphone pendant dix minutes.</strong><p>Lancez le chrono ensemble, posez les téléphones et construisez.</p><button class="secondary" id="startTimer">Lancer 10 minutes</button><div class="timer hidden" id="timer">10:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><div class="field"><label for="bridgeResult">Résultat</label><select id="bridgeResult"><option value="">Choisir…</option><option>Le pont a tenu</option><option>Le pont a presque tenu</option><option>Nous avons essayé plusieurs solutions</option></select></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level7(){return remoteLevel(6)}
 function level8(){return togetherGate(7,`<p>Préparez ensemble une boisson ou un goûter simple, puis partagez-le.</p><div class="offline"><strong>📵 20 minutes sans téléphone.</strong><p>Le choix doit être réaliste et réalisable avec ce qui est disponible.</p><button class="secondary" id="startTimer">Lancer 20 minutes</button><div class="timer hidden" id="timer">20:00</div><div id="timerDone" class="success hidden">Moment terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level9(){return remoteLevel(8)}
@@ -642,10 +650,31 @@ function level12(){return `<p>Résolvez ensemble les trois mini-énigmes finales
 <div class="offline"><strong>Finale ensemble :</strong> après validation, choisissez la dernière récompense et fixez sa date.</div>
 <button class="primary" id="validateLevel">Terminer le parcours</button>`}
 
-function startTimer(minutes){
+function timerRemaining(i,minutes){
+ const start=state.timerStarts&&state.timerStarts[i];
+ if(!start)return null;
+ return start+minutes*60000-Date.now()
+}
+function timerNotDone(i,minutes){const r=timerRemaining(i,minutes);return r===null||r>0}
+function renderTimerUI(i,minutes){
  const btn=document.getElementById("startTimer"),timer=document.getElementById("timer"),done=document.getElementById("timerDone");
- btn.classList.add("hidden");timer.classList.remove("hidden");let end=Date.now()+minutes*60000;
- const tick=()=>{let s=Math.max(0,Math.ceil((end-Date.now())/1000));timer.textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");if(s<=0){clearInterval(int);timer.classList.add("hidden");done.classList.remove("hidden");roleData().localAnswers["timer"+minutes+"done"]=true;save()}};tick();const int=setInterval(tick,1000)
+ if(!btn||!timer||!done)return;
+ const remain=timerRemaining(i,minutes);
+ if(remain===null){btn.classList.remove("hidden");timer.classList.add("hidden");done.classList.add("hidden");return}
+ if(remain<=0){btn.classList.add("hidden");timer.classList.add("hidden");done.classList.remove("hidden");return}
+ btn.classList.add("hidden");timer.classList.remove("hidden");done.classList.add("hidden");
+ const end=state.timerStarts[i]+minutes*60000;
+ const tick=()=>{
+  if(currentOpenLevel!==i){clearInterval(int);return}
+  const s=Math.max(0,Math.ceil((end-Date.now())/1000));
+  timer.textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+  if(s<=0){clearInterval(int);timer.classList.add("hidden");done.classList.remove("hidden")}
+ };
+ tick();const int=setInterval(tick,1000)
+}
+function startTimer(i,minutes){
+ state.timerStarts=state.timerStarts||{};state.timerStarts[i]=Date.now();save();
+ renderTimerUI(i,minutes)
 }
 function bindLevel(i,isParentView){
  const ask=document.getElementById("askRelay");if(ask)ask.onclick=()=>shareText(inviteText());
@@ -672,11 +701,11 @@ function bindLevel(i,isParentView){
  const checkTogether=document.getElementById("checkTogether");
  if(checkTogether)checkTogether.onclick=()=>{
   const t=TOGETHER_META[i];
-  if(t&&matchesAnswer(t,document.getElementById("togetherCode").value)){roleData().localAnswers["togetherUnlocked"+i]=true;save();openLevel(i)}
+  if(t&&matchesAnswer(t,document.getElementById("togetherCode").value)){state.togetherUnlocked=state.togetherUnlocked||{};state.togetherUnlocked[i]=true;save();openLevel(i)}
   else feedback("Code incorrect. Vérifiez les deux moitiés avec votre enfant/parent.","error")
  };
  const start=document.getElementById("startTimer");
- if(start){const minutes=i===1?5:i===3?7:20;if(roleData().localAnswers["timer"+minutes+"done"]){start.classList.add("hidden");document.getElementById("timerDone").classList.remove("hidden")}else start.onclick=()=>startTimer(minutes)}
+ if(start){const minutes=i===1?5:i===3?7:i===5?10:20;renderTimerUI(i,minutes);start.onclick=()=>startTimer(i,minutes)}
  const validateBtn=document.getElementById("validateLevel");
  if(validateBtn)validateBtn.onclick=()=>{
   if(LEVELS[i].mode==="remote"){
@@ -685,10 +714,11 @@ function bindLevel(i,isParentView){
    if(!state.parentAnswers[i]){feedback("Il manque encore la réponse du parent. Touche « Vérifier maintenant » après qu’il ait répondu.","error");return}
    completeLevel(i);return
   }
-  if(i===1&&!roleData().localAnswers.timer5done){feedback("Terminez d’abord les cinq minutes sans téléphone.","error");return}
-  if(i===3&&!roleData().localAnswers.timer7done){feedback("Terminez d’abord les sept minutes sans téléphone.","error");return}
+  if(i===1&&timerNotDone(1,5)){feedback("Terminez d’abord les cinq minutes sans téléphone.","error");return}
+  if(i===3&&timerNotDone(3,7)){feedback("Terminez d’abord les sept minutes sans téléphone.","error");return}
+  if(i===5&&timerNotDone(5,10)){feedback("Terminez d’abord les dix minutes sans téléphone.","error");return}
   if(i===5&&!document.getElementById("bridgeResult").value){feedback("Sélectionnez le résultat du pont.","error");return}
-  if(i===7&&!roleData().localAnswers.timer20done){feedback("Terminez d’abord les vingt minutes sans téléphone.","error");return}
+  if(i===7&&timerNotDone(7,20)){feedback("Terminez d’abord les vingt minutes sans téléphone.","error");return}
   if(i===9&&!document.getElementById("miniTrip").value.trim()){feedback("Indiquez l’objet qui vous a intrigués.","error");return}
   if(i===11){
    const one=normalize(document.getElementById("finalOne").value);
