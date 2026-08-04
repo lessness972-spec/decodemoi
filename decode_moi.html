@@ -207,7 +207,7 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
       <h2 style="margin:5px 0 7px" id="teamTitle"></h2>
       <div class="pills"><span class="pill" id="playersPill"></span><span class="pill profile-pill" id="rolePill" title="Changer de profil"></span><span class="pill" id="otherPresencePill"></span></div>
     </div>
-    <div class="room-tools"><div><div class="muted" style="font-size:.78rem">CODE RELAIS</div><div class="room-code" id="roomCode"></div></div><button class="manage-dot" id="manageBtn" aria-label="Gérer la partie" title="Partie et profils">•••</button></div>
+    <div class="room-tools"><button class="manage-dot hidden" id="trophyBtn" aria-label="Récompenses à réclamer" title="Récompenses à réclamer">🏆</button><div><div class="muted" style="font-size:.78rem">CODE RELAIS</div><div class="room-code" id="roomCode"></div></div><button class="manage-dot" id="manageBtn" aria-label="Gérer la partie" title="Partie et profils">•••</button></div>
   </div>
   <div class="action-row" style="margin-top:15px">
     <button class="primary" id="sendCoffretBtn">Envoyer le coffret</button>
@@ -520,6 +520,7 @@ if(window.__openRoomAnswer)openParentAnswer(window.__openRoomAnswer);
 
 document.getElementById("createBtn").onclick=openCreateModal;
 document.getElementById("manageBtn").onclick=openGameManager;
+document.getElementById("trophyBtn").onclick=()=>document.getElementById("rewardGrid").scrollIntoView({behavior:"smooth",block:"center"});
 document.getElementById("rolePill").onclick=openGameManager;
 document.addEventListener("click",e=>{
  if(e.target?.id==="confirmCreate"){
@@ -550,6 +551,9 @@ function renderMain(){
  document.getElementById("roomCode").textContent=state.room;
  document.getElementById("progressBar").style.width=(done/LEVELS.length*100)+"%";
  document.getElementById("progressText").textContent=done+" niveau"+(done>1?"x":"")+" validé"+(done>1?"s":"")+" sur "+LEVELS.length;
+ const claimable=REWARDS.filter((r,idx)=>done>=r.need&&!state.rewards[idx]).length;
+ const trophyBtn=document.getElementById("trophyBtn");
+ if(claimable>0){trophyBtn.classList.remove("hidden");trophyBtn.textContent="🏆 "+claimable}else trophyBtn.classList.add("hidden");
  renderLevels();renderRewards()
 }
 function levelStatus(i){
@@ -566,7 +570,17 @@ function renderLevels(){
 }
 function completeLevel(i){
  if(state.completed[i])return;
- state.completed[i]=true;save();renderMain();feedback("Niveau validé.")
+ const before=state.completed.filter(Boolean).length;
+ state.completed[i]=true;save();renderMain();feedback("Niveau validé.");
+ const after=before+1,idx=REWARDS.findIndex((r,i2)=>r.need>before&&r.need<=after&&!state.rewards[i2]);
+ if(idx>=0){
+  const r=REWARDS[idx];
+  setTimeout(()=>{
+   openModal("Récompense débloquée !","🏆",`<p>Vous venez de débloquer <strong>${esc(r.title)}</strong> !</p><p class="muted">Voulez-vous en profiter maintenant ?</p><div class="action-row" style="margin-top:14px"><button class="primary" id="claimRewardNow">Choisir maintenant</button><button class="ghost" id="laterReward">Plus tard</button></div>`);
+   document.getElementById("claimRewardNow").onclick=()=>openReward(idx);
+   document.getElementById("laterReward").onclick=closeModal
+  },500)
+ }
 }
 async function shareText(text){try{if(navigator.share){await navigator.share({title:"Décode-Moi",text});return}await navigator.clipboard.writeText(text);alert("Message copié.")}catch(e){try{await navigator.clipboard.writeText(text);alert("Message copié.")}catch(_){}}}
 function relayLink(){return appLink("room="+state.room)}
