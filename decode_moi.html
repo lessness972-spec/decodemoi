@@ -298,11 +298,11 @@ const FINAL_META=[
  {salt:"F3",hashes:["13VSUQT"]}
 ];
 const TOGETHER_META={
- 1:{parentHalf:"TOUR",teenHalf:"CODEE",salt:"T1",hashes:["0AOHNS0","0QFGYAO"]},
- 3:{parentHalf:"CINQ",teenHalf:"OBJETS",salt:"T3",hashes:["11XEZXS","19FH73U"]},
- 5:{parentHalf:"PONT",teenHalf:"SOLIDE",salt:"T5",hashes:["01NK7FB","0671009"]},
- 7:{parentHalf:"MEMOIRE",teenHalf:"VIVE",salt:"T7",hashes:["1VCUOZ8","05JKOAK"]},
- 9:{parentHalf:"PISTE",teenHalf:"OUVERTE",salt:"T9",hashes:["04MU7TH","0HFYUHZ"]}
+ 1:{parentHalf:"FALCON",teenHalf:"ORAGE",salt:"T1",hashes:["1H2GP1X","0H935R7"]},
+ 3:{parentHalf:"COMETE",teenHalf:"SAPHIR",salt:"T3",hashes:["0CXIJ0W","1QREEN2"]},
+ 5:{parentHalf:"LANTERNE",teenHalf:"BOUSSOLE",salt:"T5",hashes:["10OMW3V","1BUKBD5"]},
+ 7:{parentHalf:"PHENIX",teenHalf:"MERIDIEN",salt:"T7",hashes:["0GLANW5","0T21U0X"]},
+ 9:{parentHalf:"ECLIPSE",teenHalf:"HORIZON",salt:"T9",hashes:["0CKZQ8U","1V0WKC4"]}
 };
 const PERSONAL_PROMPTS={
  "Souvenir":["Quel souvenir te fait encore rire ?","Quel moment aimerais-tu revivre une fois ?"],
@@ -607,7 +607,7 @@ function parentOwnAnswer(i){
  const stage=i+1,m=PARENT_META[stage],sa=state.sharedAnswers[i]||{},shared=sharedPromptBlock(i,sa.parent,sa.teen,state.teen||"le jeune");
  if(!m)return `<div class="notice">Pas d’énigme parent pour ce niveau.</div>${shared}`;
  if(state.parentAnswers[i])return `<div class="success"><strong>Tu as déjà répondu à cette énigme ✓</strong></div><p class="muted">${esc(state.teen||"Le jeune")} peut valider ce niveau depuis son appareil.</p>${shared}`;
- return `<p class="muted" style="margin-top:-4px">Vue parent : c’est ta question, pas celle de ${esc(state.teen||"le jeune")}.</p><p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkParentOwn">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p></div><button class="primary hidden" id="submitParentOwn">Confirmer la réponse</button>${shared}`
+ return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkParentOwn">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p></div><button class="primary hidden" id="submitParentOwn">Confirmer la réponse</button>${shared}`
 }
 
 function relayInput(i){
@@ -794,19 +794,27 @@ document.addEventListener("click",e=>{if(e.target?.id==="resetGame"&&confirm("Su
 
 if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("service-worker.js").catch(()=>{})})}
 const isStandalone=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
+const INSTALL_DISMISS_KEY="decodeMoiInstallDismissed";
 let deferredInstallPrompt=null;
-window.addEventListener("beforeinstallprompt",(e)=>{
- e.preventDefault();deferredInstallPrompt=e;
- if(!isStandalone)document.getElementById("installBtn").classList.remove("hidden")
-});
-document.getElementById("installBtn").onclick=async()=>{
- if(!deferredInstallPrompt)return;
- deferredInstallPrompt.prompt();
- await deferredInstallPrompt.userChoice;
- deferredInstallPrompt=null;
- document.getElementById("installBtn").classList.add("hidden")
-};
-if(!isStandalone&&/iphone|ipad|ipod/i.test(navigator.userAgent))document.getElementById("installHintIOS").classList.remove("hidden");
+function installDismissedRecently(){return Date.now()-(Number(localStorage.getItem(INSTALL_DISMISS_KEY))||0)<24*60*60*1000}
+function dismissInstallPrompt(){localStorage.setItem(INSTALL_DISMISS_KEY,String(Date.now()));closeModal()}
+function showInstallPromptModal(){
+ if(isStandalone||installDismissedRecently())return;
+ if(deferredInstallPrompt){
+  openModal("Installer le jeu","Décode-Moi",`<p>Installez Décode-Moi sur l’écran d’accueil de ce téléphone pour l’ouvrir directement, comme une vraie application.</p><div class="action-row" style="margin-top:14px"><button class="primary" id="doInstall">Installer</button><button class="ghost" id="laterInstall">Plus tard</button></div>`);
+  document.getElementById("doInstall").onclick=async()=>{closeModal();const p=deferredInstallPrompt;deferredInstallPrompt=null;if(p){p.prompt();await p.userChoice}};
+  document.getElementById("laterInstall").onclick=dismissInstallPrompt
+ }else if(/iphone|ipad|ipod/i.test(navigator.userAgent)){
+  openModal("Installer le jeu","Décode-Moi",`<p>Sur iPhone/iPad, l’installation automatique n’est pas possible : appuie sur <strong>Partager</strong> (le carré avec une flèche, en bas de l’écran) puis sur <strong>Sur l’écran d’accueil</strong> pour installer Décode-Moi.</p><div class="action-row" style="margin-top:14px"><button class="primary" id="laterInstall">Compris</button></div>`);
+  document.getElementById("laterInstall").onclick=dismissInstallPrompt
+ }
+}
+window.addEventListener("beforeinstallprompt",(e)=>{e.preventDefault();deferredInstallPrompt=e;if(!isStandalone)document.getElementById("installBtn").classList.remove("hidden");showInstallPromptModal()});
+document.getElementById("installBtn").onclick=async()=>{if(!deferredInstallPrompt)return;const p=deferredInstallPrompt;deferredInstallPrompt=null;p.prompt();await p.userChoice;document.getElementById("installBtn").classList.add("hidden")};
+if(!isStandalone&&/iphone|ipad|ipod/i.test(navigator.userAgent)){
+ document.getElementById("installHintIOS").classList.remove("hidden");
+ setTimeout(showInstallPromptModal,600)
+}
 </script>
 </body>
 </html>
