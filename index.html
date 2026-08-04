@@ -129,6 +129,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 
 .action-row{display:flex;gap:9px;flex-wrap:wrap}.action-row>*{flex:0 0 auto}
 .progress{height:10px;border:1px solid var(--line);background:#07101e;border-radius:999px;overflow:hidden;margin-top:13px}
 .progress>div{height:100%;width:0;background:var(--cyan);transition:width .3s}
+.progress-card{border:1px solid var(--card-border);border-radius:14px;padding:13px 15px;background:var(--card);cursor:pointer;transition:border-color .14s ease,transform .14s ease}
+.progress-card:hover{border-color:#45536f;transform:translateY(-1px)}
+.progress-card strong{color:var(--white);font-size:15px}
+.final-code-card{border:1px solid var(--card-border);border-radius:14px;padding:13px 15px;background:var(--card);margin-top:12px}
+.code-tile{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-family:var(--sans);font-weight:900;font-size:14px;border:1px solid var(--card-border);background:#0e1830;color:var(--muted-soft)}
+.code-tile.found{background:var(--cyan);color:#031522;border-color:transparent}
+.code-tile.new{animation:codePop .6s ease}
+@keyframes codePop{0%{transform:scale(1)}35%{transform:scale(1.35)}100%{transform:scale(1)}}
 .muted{color:var(--muted);line-height:1.5}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
 .level{border:1px solid var(--card-border);border-radius:18px;padding:17px;background:var(--card);min-height:245px;display:flex;flex-direction:column;transition:transform .16s ease,border-color .16s ease}
@@ -181,7 +189,10 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
   <div class="brand">
     <div class="brand-copy"><div class="header-title">Décode-Moi</div><small>by Dee Kréations</small></div>
   </div>
-  <button class="ghost" id="rulesBtn">Règles</button>
+  <div style="display:flex;gap:8px">
+    <button class="ghost" id="rulesBtn">Règles</button>
+    <button class="ghost" id="manageBtn" aria-label="Options" title="Options">•••</button>
+  </div>
 </header>
 
 <section class="hero" id="home">
@@ -200,23 +211,24 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
 
 <main id="mainGame" class="hidden">
 <section class="panel">
-  <div class="dash-head">
-    <div>
-      <div class="kicker">Partie principale</div>
-      <h2 style="margin:5px 0 7px" id="teamTitle"></h2>
-      <div class="pills"><span class="pill" id="playersPill"></span><span class="pill profile-pill" id="rolePill" title="Changer de profil"></span><span class="pill" id="otherPresencePill"></span></div>
-    </div>
-    <div class="room-tools"><button class="manage-dot hidden" id="trophyBtn" aria-label="Récompenses à réclamer" title="Récompenses à réclamer">🏆</button><div><div class="muted" style="font-size:.78rem">CODE RELAIS</div><div class="room-code" id="roomCode"></div></div><button class="manage-dot" id="manageBtn" aria-label="Gérer la partie" title="Partie et profils">•••</button></div>
+  <div class="kicker">Partie en cours</div>
+  <h2 style="margin:5px 0 4px" id="teamTitle"></h2>
+  <p class="muted" id="otherStatusLine" style="margin:0 0 14px;font-size:.98rem"></p>
+
+  <div class="progress-card" id="progressCard" tabindex="0" role="button">
+    <strong id="progressLabel"></strong>
+    <div class="progress" style="margin-top:8px"><div id="progressBar"></div></div>
   </div>
-  <div class="action-row" style="margin-top:15px">
-    <button class="primary" id="sendCoffretBtn">Envoyer le coffret</button>
-    <button class="secondary" id="inviteBtn">Envoyer un relais</button>
-    <button class="secondary" id="copyCodeBtn">Copier le code</button>
-    <button class="secondary" id="shareAppBtn">Partager le jeu</button>
+
+  <button class="pill" id="rewardsBadge" style="margin-top:12px;cursor:pointer"></button>
+
+  <div class="final-code-card" id="finalCodeCard">
+    <div class="kicker">Code final</div>
+    <div id="finalCodeCount" class="muted" style="font-size:.86rem;margin:4px 0 8px"></div>
+    <div id="finalCodeTiles" style="display:flex;gap:6px;flex-wrap:wrap"></div>
   </div>
-  <div class="progress"><div id="progressBar"></div></div>
-  <div class="muted" id="progressText" style="margin-top:7px;font-size:.86rem"></div>
-  
+
+  <button class="primary" id="mainActionBtn" style="width:100%;margin-top:16px"></button>
 </section>
 
 <section class="panel">
@@ -226,12 +238,6 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
   <div class="grid" id="levelGrid"></div>
 </section>
 
-<section class="panel">
-  <div class="kicker">Récompenses</div>
-  <h2 style="margin:6px 0 3px">Les paliers débloqués</h2>
-  
-  <div class="reward-grid" id="rewardGrid"></div>
-</section>
 <p class="footer">Les liens échangés ne contiennent aucun nom complet. La progression est sauvegardée sur chaque téléphone et synchronisée entre les deux.</p>
 <footer class="dee-footer">
   <img src="assets/dee-monogram.png" alt="Dee Kréations">
@@ -327,7 +333,8 @@ const REWARDS=[
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
-const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+const FINAL_CODE_LETTERS="MERCIPOURTOI".split("");
+const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},childJoined:false,profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
  const result=Array(LEVELS.length).fill(false);
@@ -344,6 +351,7 @@ function sanitizeGame(x={}){
  game.sharedAnswers={...(x.sharedAnswers||{})};
  game.timerStarts={...(x.timerStarts||{})};
  game.togetherUnlocked={...(x.togetherUnlocked||{})};
+ game.childJoined=Boolean(x.childJoined);
  game.activeRole=x.activeRole==="parent"?"parent":"teen";
  game.profileData={parent:{...emptyProfile(),...(x.profileData?.parent||{})},teen:{...emptyProfile(),...(x.profileData?.teen||{})}};
  if(!x.profileData){
@@ -402,7 +410,7 @@ function decodeInvite(code){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");w
 function appLink(params){return location.origin+location.pathname+"?"+params}
 
 function roomApiUrl(room){return location.origin+"/api/room/"+encodeURIComponent(room)}
-function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,sharedAnswers:state.sharedAnswers,timerStarts:state.timerStarts,togetherUnlocked:state.togetherUnlocked,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
+function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,sharedAnswers:state.sharedAnswers,timerStarts:state.timerStarts,togetherUnlocked:state.togetherUnlocked,childJoined:state.childJoined,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
 function presenceLabel(ts){
  if(!ts)return "jamais connecté";
  const diff=Date.now()-ts;
@@ -429,6 +437,7 @@ function mergeServerState(server){
   if(sv&&(!state.timerStarts[k]||sv<state.timerStarts[k])){state.timerStarts[k]=sv;changed=true;dirty.add(Number(k))}
  });
  if(server.togetherUnlocked)Object.keys(server.togetherUnlocked).forEach(k=>{if(server.togetherUnlocked[k]&&!state.togetherUnlocked[k]){state.togetherUnlocked[k]=true;changed=true;dirty.add(Number(k))}});
+ if(server.childJoined&&!state.childJoined){state.childJoined=true;changed=true}
  if(typeof server.parentLastSeen==="number"&&server.parentLastSeen>state.parentLastSeen){state.parentLastSeen=server.parentLastSeen;presenceChanged=true}
  if(typeof server.teenLastSeen==="number"&&server.teenLastSeen>state.teenLastSeen){state.teenLastSeen=server.teenLastSeen;presenceChanged=true}
  if(changed){
@@ -485,15 +494,40 @@ function openGameManager(){
  if(!state.created){openCreateModal();return}
  const games=Object.values(store.games);
  const cards=games.map(game=>`<article class="card"><h3>${esc(game.team||"Partie sans nom")}</h3><p>${esc(game.teen||"Jeune")} + ${esc(game.parentName||"Parent")}<br><small>Code ${esc(game.room)}</small></p><div class="action-row"><button class="secondary" data-open-room="${esc(game.room)}">Ouvrir</button>${game.room===state.room?"":`<button class="danger" data-delete-room="${esc(game.room)}">Supprimer</button>`}</div></article>`).join("");
- openModal("Partie et profils","Réglages",`<div class="notice"><strong>Profil utilisé sur cet appareil :</strong> ${esc(profileName())}</div>
- <p class="muted" style="margin-top:6px">Ce réglage ne sert que si le jeune et le parent jouent sur le même téléphone (il sépare juste les indices). Si chacun a son propre téléphone, pas besoin d’y toucher : le parent répond aux énigmes via le lien reçu dans « Envoyer un relais ».</p>
+ openModal("Options","Réglages",`
+ <div class="action-row">
+  <button class="secondary" id="mgrSendCoffret">Envoyer le coffret</button>
+  <button class="secondary" id="mgrInviteRelay">Envoyer un relais</button>
+  <button class="secondary" id="mgrShareApp">Partager le jeu</button>
+ </div>
+ <hr>
+ <div class="notice"><strong>Profil utilisé sur cet appareil :</strong> ${esc(profileName())}</div>
+ <p class="muted" style="margin-top:6px">Ce réglage ne sert que si le jeune et le parent jouent sur le même téléphone (il sépare juste les indices). Si chacun a son propre téléphone, pas besoin d’y toucher.</p>
  <div class="mode-grid"><article class="mode-card"><h3>${esc(state.teen)}</h3><p>Profil du jeune. Les essais et indices restent séparés.</p><button class="${state.activeRole==="teen"?"primary":"secondary"}" data-role="teen">Utiliser ce profil</button></article><article class="mode-card"><h3>${esc(state.parentName)}</h3><p>Profil du parent sur le même appareil.</p><button class="${state.activeRole==="parent"?"primary":"secondary"}" data-role="parent">Utiliser ce profil</button></article></div>
- ${games.length>1?`<hr><div class="grid">${cards}</div>`:""}<hr><div class="action-row"><button class="primary" id="newGameBtn">Nouvelle partie</button><button class="danger" id="deleteCurrentBtn">Supprimer cette partie</button></div>`);
+ ${games.length>1?`<hr><p class="kicker">Changer de partie</p><div class="grid">${cards}</div>`:""}
+ <hr>
+ <details><summary class="muted" style="cursor:pointer">Dépannage (code technique)</summary>
+  <div class="field"><label>Code du coffret</label><div class="code-box">${esc(state.room)}</div></div>
+  <button class="ghost" id="mgrCopyCode" style="margin-top:8px">Copier le code</button>
+ </details>
+ <hr><div class="action-row"><button class="primary" id="newGameBtn">Nouvelle partie</button><button class="danger" id="deleteCurrentBtn">Recommencer / quitter cette partie</button></div>`);
  document.querySelectorAll("[data-role]").forEach(btn=>btn.onclick=()=>{state.activeRole=btn.dataset.role;save();closeModal();renderMain()});
  document.querySelectorAll("[data-open-room]").forEach(btn=>btn.onclick=()=>activateGame(btn.dataset.openRoom));
  document.querySelectorAll("[data-delete-room]").forEach(btn=>btn.onclick=()=>{if(confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(btn.dataset.deleteRoom)});
  document.getElementById("newGameBtn").onclick=openCreateModal;
- document.getElementById("deleteCurrentBtn").onclick=()=>{if(confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(state.room)}
+ document.getElementById("deleteCurrentBtn").onclick=()=>{if(confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(state.room)};
+ document.getElementById("mgrSendCoffret").onclick=openInviteChild;
+ document.getElementById("mgrInviteRelay").onclick=sendRelayNotice;
+ document.getElementById("mgrShareApp").onclick=shareAppFile;
+ document.getElementById("mgrCopyCode").onclick=copyRoomCode
+}
+function openRewardsModal(){
+ const done=state.completed.filter(Boolean).length;
+ const cardsHtml=REWARDS.map((r,i)=>{const open=done>=r.need,reward=state.rewards[i];
+  return `<article class="reward ${open?"":"locked"} ${reward?"chosen":""}"><span class="badge">${r.badge}</span><h3>${r.title}</h3><p>${reward?`<strong>${esc(reward.activity)}</strong><br>${esc(reward.withWho)} · ${fmt(reward.date)}`:"Le joueur choisit l’activité, les participants et une date."}</p>${open?`<button class="${reward?"secondary":"primary"}" data-reward="${i}">${reward?"Modifier":"Choisir"}</button>`:`<div class="lock-note">🔒 Palier non atteint</div>`}</article>`
+ }).join("");
+ openModal("Récompenses","🏆",`<div class="reward-grid">${cardsHtml}</div>`);
+ document.querySelectorAll("[data-reward]").forEach(b=>b.onclick=()=>openReward(Number(b.dataset.reward)))
 }
 
 (function handleIncomingLink(){
@@ -504,7 +538,7 @@ function openGameManager(){
   if(payload&&payload.room){
    const room=String(payload.room).toUpperCase();
    const existing=store.games[room];
-   const newGame=existing?sanitizeGame(existing):sanitizeGame({...payload,room,created:true,activeRole:"teen"});
+   const newGame=existing?sanitizeGame(existing):sanitizeGame({...payload,room,created:true,activeRole:"teen",childJoined:true});
    store.games[room]=newGame;store.activeRoom=room;
    localStorage.setItem(STORE_KEY,JSON.stringify(store));state=newGame
   }
@@ -519,8 +553,7 @@ if(window.__openRoomAnswer)openParentAnswer(window.__openRoomAnswer);
 
 document.getElementById("createBtn").onclick=openCreateModal;
 document.getElementById("manageBtn").onclick=openGameManager;
-document.getElementById("trophyBtn").onclick=()=>document.getElementById("rewardGrid").scrollIntoView({behavior:"smooth",block:"center"});
-document.getElementById("rolePill").onclick=openGameManager;
+document.getElementById("progressCard").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.target.click()}});
 document.addEventListener("click",e=>{
  if(e.target?.id==="confirmCreate"){
   const team=document.getElementById("newTeam").value.trim(),teen=document.getElementById("newTeen").value.trim(),parent=document.getElementById("newParent").value.trim();
@@ -538,23 +571,61 @@ function openInviteChild(){
  document.getElementById("shareJoin").onclick=()=>shareText(coffretJoinLink());
  document.getElementById("copyJoin").onclick=async()=>{try{await navigator.clipboard.writeText(coffretJoinLink());alert("Lien copié.")}catch(e){prompt("Copie ce lien :",coffretJoinLink())}}
 }
-document.getElementById("sendCoffretBtn").onclick=openInviteChild;
 document.getElementById("seeRulesLink").onclick=(e)=>{e.preventDefault();document.getElementById("rulesBtn").click()};
 
-function renderMain(){
+function currentLevelIndex(){const i=state.completed.indexOf(false);return i===-1?LEVELS.length-1:i}
+function otherStatusText(){
+ if(!state.childJoined)return `En attente que ${state.teen||"le jeune"} rejoigne la partie`;
+ const iAmParent=state.activeRole==="parent";
+ const otherName=iAmParent?(state.teen||"le jeune"):(state.parentName||"le parent");
+ const otherLastSeen=iAmParent?state.teenLastSeen:state.parentLastSeen;
+ if(presenceLabel(otherLastSeen)==="en ligne")return `${otherName} • En ligne`;
+ if(state.completed.every(Boolean))return `${otherName} • Parcours terminé !`;
+ const idx=currentLevelIndex(),lvl=LEVELS[idx];
+ if(lvl.mode==="remote"){
+  if(state.parentAnswers[idx])return iAmParent?`${otherName} • Il ne reste plus qu’à valider chez lui`:`${otherName} • A répondu, tu peux valider !`;
+  return `${otherName} • N’a pas encore répondu`
+ }
+ if(state.togetherUnlocked[idx])return `${otherName} • Prêt pour l’activité`;
+ return `${otherName} • Vous attend pour le code à deux`
+}
+function computeMainAction(){
+ if(!state.childJoined)return{label:"Envoyer le coffret",action:openInviteChild};
+ const idx=currentLevelIndex();
+ if(state.completed.every(Boolean))return{label:"Revoir le parcours",action:()=>openLevel(LEVELS.length-1)};
+ const lvl=LEVELS[idx],iAmParent=state.activeRole==="parent",firstEver=state.completed.every(v=>!v);
+ if(lvl.mode==="remote"){
+  if(iAmParent){
+   if(!state.parentAnswers[idx])return{label:"Répondre à l’énigme",action:()=>openLevel(idx)};
+   return{label:"Voir le défi en cours",action:()=>openLevel(idx)}
+  }
+  const solvedLocally=roleData().localAnswers["remoteCorrect"+idx];
+  if(!solvedLocally)return{label:firstEver?"Commencer le défi":"Continuer l’aventure",action:()=>openLevel(idx)};
+  if(!state.parentAnswers[idx])return{label:"Envoyer le relais",action:()=>openLevel(idx)};
+  return{label:"Voir sa réponse",action:()=>openLevel(idx)}
+ }
+ if(!state.togetherUnlocked[idx])return{label:"Débloquer le défi",action:()=>openLevel(idx)};
+ return{label:firstEver?"Commencer le défi":"Continuer l’aventure",action:()=>openLevel(idx)}
+}
+function renderFinalCode(){
  const done=state.completed.filter(Boolean).length;
+ document.getElementById("finalCodeCount").textContent="🔐 "+done+" élément"+(done>1?"s":"")+" découvert"+(done>1?"s":"")+" sur "+LEVELS.length;
+ document.getElementById("finalCodeTiles").innerHTML=FINAL_CODE_LETTERS.map((ch,i)=>`<div class="code-tile ${state.completed[i]?"found":""}">${state.completed[i]?esc(ch):"?"}</div>`).join("")
+}
+function renderMain(){
+ const done=state.completed.filter(Boolean).length,idx=currentLevelIndex();
  document.getElementById("teamTitle").textContent=state.team;
- document.getElementById("playersPill").textContent=state.teen+" + "+state.parentName;
- document.getElementById("rolePill").textContent="Profil : "+profileName();
- document.getElementById("otherPresencePill").textContent=state.activeRole==="parent"?(state.teen||"Le jeune")+" : "+presenceLabel(state.teenLastSeen):(state.parentName||"Le parent")+" : "+presenceLabel(state.parentLastSeen);
- document.getElementById("roomCode").textContent=state.room;
+ document.getElementById("otherStatusLine").textContent=otherStatusText();
+ document.getElementById("progressLabel").innerHTML=`Défi ${Math.min(idx+1,LEVELS.length)} sur ${LEVELS.length}<br><span class="muted" style="font-size:.82rem">${done} défi${done>1?"s":""} terminé${done>1?"s":""}</span>`;
  document.getElementById("progressBar").style.width=(done/LEVELS.length*100)+"%";
+ document.getElementById("progressCard").onclick=()=>openLevel(idx);
  const unlockedRewards=REWARDS.filter(r=>done>=r.need).length;
- document.getElementById("progressText").textContent=done+" niveau"+(done>1?"x":"")+" validé"+(done>1?"s":"")+" sur "+LEVELS.length+" · "+unlockedRewards+" récompense"+(unlockedRewards>1?"s":"")+" débloquée"+(unlockedRewards>1?"s":"");
- const claimable=REWARDS.filter((r,idx)=>done>=r.need&&!state.rewards[idx]).length;
- const trophyBtn=document.getElementById("trophyBtn");
- if(claimable>0){trophyBtn.classList.remove("hidden");trophyBtn.textContent="🏆 "+claimable}else trophyBtn.classList.add("hidden");
- renderLevels();renderRewards()
+ document.getElementById("rewardsBadge").textContent="🏆 "+unlockedRewards+(unlockedRewards>1?" récompenses":" récompense");
+ document.getElementById("rewardsBadge").onclick=openRewardsModal;
+ renderFinalCode();
+ const mainAction=computeMainAction(),mainBtn=document.getElementById("mainActionBtn");
+ mainBtn.textContent=mainAction.label;mainBtn.onclick=mainAction.action;
+ renderLevels()
 }
 function levelStatus(i){
  if(i>0&&!state.completed[i-1])return{open:false,why:"Le niveau précédent doit être validé."};
@@ -571,7 +642,10 @@ function renderLevels(){
 function completeLevel(i){
  if(state.completed[i])return;
  const before=state.completed.filter(Boolean).length;
- state.completed[i]=true;save();renderMain();feedback("Niveau validé.");
+ state.completed[i]=true;save();renderMain();
+ feedback(i===LEVELS.length-1?`Niveau validé. Le code final révèle : « ${FINAL_CODE_LETTERS.join("")} » !`:"Niveau validé.");
+ const tile=document.querySelectorAll("#finalCodeTiles .code-tile")[i];
+ if(tile){tile.classList.add("new");setTimeout(()=>tile.classList.remove("new"),700)}
  const after=before+1,idx=REWARDS.findIndex((r,i2)=>r.need>before&&r.need<=after&&!state.rewards[i2]);
  if(idx>=0){
   const r=REWARDS[idx];
@@ -585,16 +659,16 @@ function completeLevel(i){
 async function shareText(text){try{if(navigator.share){await navigator.share({title:"Décode-Moi",text});return}await navigator.clipboard.writeText(text);alert("Message copié.")}catch(e){try{await navigator.clipboard.writeText(text);alert("Message copié.")}catch(_){}}}
 function relayLink(){return appLink("room="+state.room)}
 function inviteText(){return `Décode-Moi : touche ce lien pour répondre à l’énigme qui attend → ${relayLink()}`}
-document.getElementById("inviteBtn").onclick=()=>shareText(inviteText());
-document.getElementById("copyCodeBtn").onclick=async()=>{try{await navigator.clipboard.writeText(state.room);alert("Code copié : "+state.room)}catch(e){prompt("Copie ce code :",state.room)}};
-document.getElementById("shareAppBtn").onclick=async()=>{
+function sendRelayNotice(){shareText(inviteText())}
+async function copyRoomCode(){try{await navigator.clipboard.writeText(state.room);alert("Code copié : "+state.room)}catch(e){prompt("Copie ce code :",state.room)}}
+async function shareAppFile(){
  const source="<!DOCTYPE html>\n"+document.documentElement.outerHTML;
  const file=new File([source],"decode_moi.html",{type:"text/html"});
  try{
    if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({title:"Décode-Moi",files:[file]})}
    else{const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);alert("Une copie a été téléchargée.")}
  }catch(e){}
-};
+}
 
 
 function normalize(v){return String(v||"").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ")}
@@ -747,12 +821,6 @@ function bindLevel(i,isParentView){
  }
 }
 
-function renderRewards(){
- const done=state.completed.filter(Boolean).length,grid=document.getElementById("rewardGrid");grid.innerHTML="";
- REWARDS.forEach((r,i)=>{const open=done>=r.need,reward=state.rewards[i],d=document.createElement("article");d.className=`reward ${open?"":"locked"} ${reward?"chosen":""}`;
- d.innerHTML=`<span class="badge">${r.badge}</span><h3>${r.title}</h3><p>${reward?`<strong>${esc(reward.activity)}</strong><br>${esc(reward.withWho)} · ${fmt(reward.date)}`:"Le joueur choisit l’activité, les participants et une date."}</p>${open?`<button class="${reward?"secondary":"primary"}" data-reward="${i}">${reward?"Modifier":"Choisir"}</button>`:`<div class="lock-note">🔒 Palier non atteint</div>`}`;grid.appendChild(d)});
- document.querySelectorAll("[data-reward]").forEach(b=>b.onclick=()=>openReward(Number(b.dataset.reward)))
-}
 function openReward(i){
  const r=REWARDS[i],x=state.rewards[i]||{};
  openModal(r.title,"Récompense",`<div class="offline"><strong>Moment sans téléphone :</strong> règle identique pour le jeune et les adultes.</div>

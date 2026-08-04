@@ -49,6 +49,7 @@ function mergeRoom(existing, incoming) {
     sharedAnswers: mergeSharedAnswers(base.sharedAnswers, incoming.sharedAnswers),
     timerStarts: mergeTimerStarts(base.timerStarts, incoming.timerStarts),
     togetherUnlocked: mergeBoolMap(base.togetherUnlocked, incoming.togetherUnlocked),
+    childJoined: Boolean(base.childJoined || incoming.childJoined),
     teenLastSeen: Math.max(Number(base.teenLastSeen) || 0, Number(incoming.teenLastSeen) || 0),
     parentLastSeen: Math.max(Number(base.parentLastSeen) || 0, Number(incoming.parentLastSeen) || 0),
     updatedAt: Date.now()
