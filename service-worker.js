@@ -1,4 +1,4 @@
-const CACHE_NAME = "decodemoi-v1";
+const CACHE_NAME = "decodemoi-v2";
 const SHELL_ASSETS = ["index.html", "manifest.json", "assets/icone-decodemoi.png", "assets/dee-monogram.png"];
 
 self.addEventListener("install", (event) => {
@@ -18,8 +18,9 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.pathname.startsWith("/api/")) return;
+  const isDocument = event.request.mode === "navigate" || event.request.destination === "document" || url.pathname.endsWith(".html") || url.pathname === "/";
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, isDocument ? { cache: "no-store" } : undefined)
       .then((response) => {
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
