@@ -550,7 +550,8 @@ function renderMain(){
  document.getElementById("otherPresencePill").textContent=state.activeRole==="parent"?(state.teen||"Le jeune")+" : "+presenceLabel(state.teenLastSeen):(state.parentName||"Le parent")+" : "+presenceLabel(state.parentLastSeen);
  document.getElementById("roomCode").textContent=state.room;
  document.getElementById("progressBar").style.width=(done/LEVELS.length*100)+"%";
- document.getElementById("progressText").textContent=done+" niveau"+(done>1?"x":"")+" validé"+(done>1?"s":"")+" sur "+LEVELS.length;
+ const unlockedRewards=REWARDS.filter(r=>done>=r.need).length;
+ document.getElementById("progressText").textContent=done+" niveau"+(done>1?"x":"")+" validé"+(done>1?"s":"")+" sur "+LEVELS.length+" · "+unlockedRewards+" récompense"+(unlockedRewards>1?"s":"")+" débloquée"+(unlockedRewards>1?"s":"");
  const claimable=REWARDS.filter((r,idx)=>done>=r.need&&!state.rewards[idx]).length;
  const trophyBtn=document.getElementById("trophyBtn");
  if(claimable>0){trophyBtn.classList.remove("hidden");trophyBtn.textContent="🏆 "+claimable}else trophyBtn.classList.add("hidden");
