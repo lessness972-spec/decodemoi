@@ -166,6 +166,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 
 .hintbox{border:1px solid rgba(66,203,211,.42);background:rgba(66,203,211,.08);color:#d9fbff}
 .searchbox{border:1px solid rgba(242,138,43,.42);background:rgba(242,138,43,.08);color:#ffe3c7}
 .timer{text-align:center;font-family:var(--heading);font-size:35px;font-weight:700;letter-spacing:.08em;margin:13px 0;color:var(--orange)}
+.timer.timer-warning{animation:timerPulse 1s ease-in-out infinite;color:var(--danger)}
+@keyframes timerPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.06)}}
 .modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:rgba(2,8,18,.84)}
 .modal-box{width:min(760px,100%);max-height:91vh;overflow:auto;border:1px solid var(--card-border);border-radius:21px;padding:23px;background:var(--surface);box-shadow:0 24px 70px rgba(0,0,0,.48)}
 .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.modal-head h2{margin:0;color:var(--white);font-size:29px}
@@ -421,12 +423,32 @@ function presenceLabel(ts){
  return "vu il y a "+Math.round(min/60)+" h"
 }
 let currentOpenLevel=null;
+function fireLocalNotification(msg){
+ try{
+  if(!("Notification" in window)||Notification.permission!=="granted")return;
+  if(navigator.serviceWorker&&navigator.serviceWorker.controller){
+   navigator.serviceWorker.ready.then(reg=>reg.showNotification("Décode-Moi",{body:msg,icon:"assets/icone-decodemoi.png"})).catch(()=>{})
+  }else{
+   new Notification("Décode-Moi",{body:msg,icon:"assets/icone-decodemoi.png"})
+  }
+ }catch(e){}
+}
+function notifPermissionLabel(){
+ if(!("Notification" in window))return "Non disponible sur ce navigateur";
+ if(Notification.permission==="granted")return "Activées ✓";
+ if(Notification.permission==="denied")return "Bloquées (à réactiver dans les réglages du téléphone)";
+ return "Non activées"
+}
 function mergeServerState(server){
  if(!server||typeof server!=="object"||!state.created)return false;
- let changed=false,presenceChanged=false;
+ let changed=false,presenceChanged=false,turnMsg=null;
  const dirty=new Set();
- if(Array.isArray(server.completed))server.completed.forEach((v,i)=>{if(v&&!state.completed[i]){state.completed[i]=true;changed=true;dirty.add(i)}});
- if(server.parentAnswers)Object.keys(server.parentAnswers).forEach(k=>{if(server.parentAnswers[k]&&!state.parentAnswers[k]){state.parentAnswers[k]=true;changed=true;dirty.add(Number(k))}});
+ if(Array.isArray(server.completed))server.completed.forEach((v,i)=>{if(v&&!state.completed[i]){state.completed[i]=true;changed=true;dirty.add(i);
+  if(state.activeRole==="parent"&&LEVELS[i+1]&&LEVELS[i+1].mode==="remote"&&!state.parentAnswers[i+1])turnMsg=`${state.teen||"Le jeune"} a joué. À toi maintenant.`
+ }});
+ if(server.parentAnswers)Object.keys(server.parentAnswers).forEach(k=>{if(server.parentAnswers[k]&&!state.parentAnswers[k]){state.parentAnswers[k]=true;changed=true;dirty.add(Number(k));
+  if(state.activeRole!=="parent"&&!state.completed[k])turnMsg=`${state.parentName||"Le parent"} a répondu. Ton prochain défi t’attend.`
+ }});
  if(server.rewards)Object.keys(server.rewards).forEach(k=>{if(!state.rewards[k]&&server.rewards[k]){state.rewards[k]=server.rewards[k];changed=true}});
  if(server.sharedAnswers)Object.keys(server.sharedAnswers).forEach(k=>{
   const s=server.sharedAnswers[k]||{},cur=state.sharedAnswers[k]||{};
@@ -443,7 +465,8 @@ function mergeServerState(server){
  if(changed){
   save();
   if(!mainGame.classList.contains("hidden"))renderMain();
-  if(currentOpenLevel!==null&&dirty.has(currentOpenLevel))openLevel(currentOpenLevel)
+  if(currentOpenLevel!==null&&dirty.has(currentOpenLevel))openLevel(currentOpenLevel);
+  if(turnMsg)fireLocalNotification(turnMsg)
  }else if(presenceChanged&&state.room){
   state=sanitizeGame(state);store.games[state.room]=state;store.activeRoom=state.room;localStorage.setItem(STORE_KEY,JSON.stringify(store));
   if(currentOpenLevel===null&&!mainGame.classList.contains("hidden"))renderMain()
@@ -506,6 +529,9 @@ function openGameManager(){
  <div class="mode-grid"><article class="mode-card"><h3>${esc(state.teen)}</h3><p>Profil du jeune. Les essais et indices restent séparés.</p><button class="${state.activeRole==="teen"?"primary":"secondary"}" data-role="teen">Utiliser ce profil</button></article><article class="mode-card"><h3>${esc(state.parentName)}</h3><p>Profil du parent sur le même appareil.</p><button class="${state.activeRole==="parent"?"primary":"secondary"}" data-role="parent">Utiliser ce profil</button></article></div>
  ${games.length>1?`<hr><p class="kicker">Changer de partie</p><div class="grid">${cards}</div>`:""}
  <hr>
+ <div class="field"><label>Notifications « c’est ton tour »</label><p class="muted" style="margin:2px 0 8px;font-size:.85rem">${esc(notifPermissionLabel())}</p><button class="secondary" id="mgrEnableNotif">Activer les notifications</button></div>
+ <div class="field" style="margin-top:14px"><label>Son du chrono</label><button class="secondary" id="mgrToggleSound">${soundEnabled()?"🔊 Activé":"🔇 Coupé"}</button></div>
+ <hr>
  <details><summary class="muted" style="cursor:pointer">Dépannage (code technique)</summary>
   <div class="field"><label>Code du coffret</label><div class="code-box">${esc(state.room)}</div></div>
   <button class="ghost" id="mgrCopyCode" style="margin-top:8px">Copier le code</button>
@@ -519,7 +545,14 @@ function openGameManager(){
  document.getElementById("mgrSendCoffret").onclick=openInviteChild;
  document.getElementById("mgrInviteRelay").onclick=sendRelayNotice;
  document.getElementById("mgrShareApp").onclick=shareAppFile;
- document.getElementById("mgrCopyCode").onclick=copyRoomCode
+ document.getElementById("mgrCopyCode").onclick=copyRoomCode;
+ document.getElementById("mgrEnableNotif").onclick=async()=>{
+  if(!("Notification" in window)){feedback("Non disponible sur ce navigateur.","error");return}
+  const perm=await Notification.requestPermission();
+  closeModal();openGameManager();
+  feedback(perm==="granted"?"Notifications activées.":"Notifications non activées.",perm==="granted"?"success":"error")
+ };
+ document.getElementById("mgrToggleSound").onclick=()=>{setSoundEnabled(!soundEnabled());closeModal();openGameManager()}
 }
 function openRewardsModal(){
  const done=state.completed.filter(Boolean).length;
@@ -744,19 +777,41 @@ function timerRemaining(i,minutes){
  return start+minutes*60000-Date.now()
 }
 function timerNotDone(i,minutes){const r=timerRemaining(i,minutes);return r===null||r>0}
+const SOUND_KEY="decodeMoiSoundOn";
+function soundEnabled(){const v=localStorage.getItem(SOUND_KEY);return v===null?true:v==="1"}
+function setSoundEnabled(on){localStorage.setItem(SOUND_KEY,on?"1":"0")}
+function playTone(freq,duration,volume){
+ if(!soundEnabled())return;
+ try{
+  const Ctx=window.AudioContext||window.webkitAudioContext;
+  const ctx=new Ctx();
+  const osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.frequency.value=freq;osc.type="sine";
+  gain.gain.setValueAtTime(volume,ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+duration);
+  osc.connect(gain);gain.connect(ctx.destination);
+  osc.start();osc.stop(ctx.currentTime+duration);
+  osc.onended=()=>ctx.close()
+ }catch(e){}
+}
+function playTimerWarningSound(){playTone(880,0.18,0.12)}
+function playTimerEndSound(){playTone(660,0.14,0.14);setTimeout(()=>playTone(990,0.18,0.14),150)}
 function renderTimerUI(i,minutes){
  const btn=document.getElementById("startTimer"),timer=document.getElementById("timer"),done=document.getElementById("timerDone");
  if(!btn||!timer||!done)return;
  const remain=timerRemaining(i,minutes);
- if(remain===null){btn.classList.remove("hidden");timer.classList.add("hidden");done.classList.add("hidden");return}
+ if(remain===null){btn.classList.remove("hidden");timer.classList.add("hidden");timer.classList.remove("timer-warning");done.classList.add("hidden");return}
  if(remain<=0){btn.classList.add("hidden");timer.classList.add("hidden");done.classList.remove("hidden");return}
  btn.classList.add("hidden");timer.classList.remove("hidden");done.classList.add("hidden");
+ timer.dataset.warned=remain<=30000?"1":"";
  const end=state.timerStarts[i]+minutes*60000;
  const tick=()=>{
   if(currentOpenLevel!==i){clearInterval(int);return}
   const s=Math.max(0,Math.ceil((end-Date.now())/1000));
   timer.textContent=String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
-  if(s<=0){clearInterval(int);timer.classList.add("hidden");done.classList.remove("hidden")}
+  timer.classList.toggle("timer-warning",s>0&&s<=30);
+  if(s<=30&&s>0&&!timer.dataset.warned){timer.dataset.warned="1";playTimerWarningSound()}
+  if(s<=0){clearInterval(int);timer.classList.add("hidden");timer.classList.remove("timer-warning");done.classList.remove("hidden");playTimerEndSound()}
  };
  tick();const int=setInterval(tick,1000)
 }

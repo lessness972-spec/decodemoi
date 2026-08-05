@@ -15,6 +15,16 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((list) => {
+      if (list.length) return list[0].focus();
+      return self.clients.openWindow("/");
+    })
+  );
+});
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== "GET" || url.pathname.startsWith("/api/")) return;
