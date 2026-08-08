@@ -759,7 +759,7 @@ function level4(){return togetherGate(3,`<p>Trouvez ensemble cinq objets : un do
 function level5(){return remoteLevel(4)}
 function level6(){return togetherGate(5,`<p>Construisez un pont entre deux livres avec seulement deux feuilles de papier, du ruban adhésif et un petit objet à faire traverser.</p><div class="offline"><strong>📵 Sans téléphone pendant dix minutes.</strong><p>Lancez le chrono ensemble, posez les téléphones et construisez.</p><button class="secondary" id="startTimer">Lancer 10 minutes</button><div class="timer hidden" id="timer">10:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><div class="field"><label for="bridgeResult">Résultat</label><select id="bridgeResult"><option value="">Choisir…</option><option>Le pont a tenu</option><option>Le pont a presque tenu</option><option>Nous avons essayé plusieurs solutions</option></select></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level7(){return remoteLevel(6)}
-function level8(){return togetherGate(7,`<p>Préparez ensemble une boisson ou un goûter simple, puis partagez-le.</p><div class="offline"><strong>📵 20 minutes sans téléphone.</strong><p>Le choix doit être réaliste et réalisable avec ce qui est disponible.</p><button class="secondary" id="startTimer">Lancer 20 minutes</button><div class="timer hidden" id="timer">20:00</div><div id="timerDone" class="success hidden">Moment terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
+function level8(){return togetherGate(7,`<p>Préparez ensemble une boisson ou un goûter simple, puis partagez-le.</p><div class="offline"><strong>📵 15 minutes sans téléphone.</strong><p>Le choix doit être réaliste et réalisable avec ce qui est disponible.</p><button class="secondary" id="startTimer">Lancer 15 minutes</button><div class="timer hidden" id="timer">15:00</div><div id="timerDone" class="success hidden">Moment terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level9(){return remoteLevel(8)}
 function level10(){return togetherGate(9,`<p>Faites une sortie de 20 à 45 minutes avec la mère, le père ou les deux parents.</p><div class="offline"><strong>Téléphones rangés pour tout le monde.</strong></div><p>Retrouvez quelque chose de rouge, un mot de plus de huit lettres et un objet dont vous ignorez l’utilité.</p><div class="field"><label for="miniTrip">Quel objet vous a le plus intrigués ?</label><input id="miniTrip" maxlength="100"></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level11(){return remoteLevel(10)}
@@ -848,7 +848,7 @@ function bindLevel(i,isParentView){
   else feedback("Code incorrect. Vérifiez les deux moitiés avec votre enfant/parent.","error")
  };
  const start=document.getElementById("startTimer");
- if(start){const minutes=i===1?5:i===3?7:i===5?10:20;renderTimerUI(i,minutes);start.onclick=()=>startTimer(i,minutes)}
+ if(start){const minutes=i===1?5:i===3?7:i===5?10:15;renderTimerUI(i,minutes);start.onclick=()=>startTimer(i,minutes)}
  const validateBtn=document.getElementById("validateLevel");
  if(validateBtn)validateBtn.onclick=()=>{
   if(LEVELS[i].mode==="remote"){
@@ -861,7 +861,7 @@ function bindLevel(i,isParentView){
   if(i===3&&timerNotDone(3,7)){feedback("Terminez d’abord les sept minutes sans téléphone.","error");return}
   if(i===5&&timerNotDone(5,10)){feedback("Terminez d’abord les dix minutes sans téléphone.","error");return}
   if(i===5&&!document.getElementById("bridgeResult").value){feedback("Sélectionnez le résultat du pont.","error");return}
-  if(i===7&&timerNotDone(7,20)){feedback("Terminez d’abord les vingt minutes sans téléphone.","error");return}
+  if(i===7&&timerNotDone(7,15)){feedback("Terminez d’abord les quinze minutes sans téléphone.","error");return}
   if(i===9&&!document.getElementById("miniTrip").value.trim()){feedback("Indiquez l’objet qui vous a intrigués.","error");return}
   if(i===11){
    const one=normalize(document.getElementById("finalOne").value);
