@@ -137,8 +137,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 
 .code-tile.found{background:var(--cyan);color:#031522;border-color:transparent}
 .code-tile.new{animation:codePop .6s ease}
 @keyframes codePop{0%{transform:scale(1)}35%{transform:scale(1.35)}100%{transform:scale(1)}}
-.lock-anim{font-size:56px;text-align:center;margin:6px 0 16px}
-.lock-anim.unlocked{animation:lockPop .6s ease}
+.lock-overlay{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(2,8,18,.96);text-align:center;padding:28px}
+.lock-overlay .lock-emoji{font-size:min(38vw,160px);line-height:1}
+.lock-overlay .lock-emoji.unlocked{animation:lockPop .7s ease}
+.lock-overlay p{max-width:52ch;font-size:19px;line-height:1.6;margin-top:22px;color:var(--white);white-space:pre-line}
+.lock-overlay button{margin-top:26px}
 @keyframes lockPop{0%{transform:scale(1) rotate(0)}40%{transform:scale(1.3) rotate(-15deg)}70%{transform:scale(1.15) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
 .muted{color:var(--muted);line-height:1.5}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
@@ -512,12 +515,22 @@ function stopParentHeartbeat(){if(parentHeartbeatTimer){clearInterval(parentHear
 function pingParentPresence(room){fetch(roomApiUrl(room),{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({room,team:"",teen:"",parentName:"",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},parentLastSeen:Date.now()})}).catch(()=>{})}
 function closeModal(){modal.classList.add("hidden");currentOpenLevel=null;stopParentHeartbeat()}
 function feedback(msg,type="success"){const old=modalBody.querySelector(".feedback");if(old)old.remove();const d=document.createElement("div");d.className=type+" feedback";d.textContent=msg;modalBody.prepend(d)}
-function playLockOpenAnimation(){
- const old=modalBody.querySelector(".lock-anim");if(old)old.remove();
- const el=document.createElement("div");el.className="lock-anim";el.textContent="🔒";
- modalBody.prepend(el);
- setTimeout(()=>{el.textContent="🔓";el.classList.add("unlocked")},450);
- setTimeout(()=>{if(el.parentNode)el.remove()},2600)
+function playLockOpenAnimation(message){
+ const old=document.getElementById("lockOverlay");if(old)old.remove();
+ const overlay=document.createElement("div");overlay.className="lock-overlay";overlay.id="lockOverlay";
+ overlay.innerHTML=`<div class="lock-emoji" id="lockOverlayEmoji">🔒</div>`;
+ document.body.appendChild(overlay);
+ setTimeout(()=>{
+  const emoji=document.getElementById("lockOverlayEmoji");
+  if(!emoji)return;
+  emoji.textContent="🔓";emoji.classList.add("unlocked")
+ },500);
+ setTimeout(()=>{
+  if(!overlay.parentNode)return;
+  if(message)overlay.insertAdjacentHTML("beforeend",`<p>${esc(message)}</p>`);
+  overlay.insertAdjacentHTML("beforeend",`<button class="primary" id="closeLockOverlay">Continuer</button>`);
+  document.getElementById("closeLockOverlay").onclick=()=>overlay.remove()
+ },1300)
 }
 document.getElementById("closeModal").onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 function showHome(){home.classList.remove("hidden");mainGame.classList.add("hidden");parentGame.classList.add("hidden")}
@@ -534,8 +547,14 @@ function devModeSectionHtml(){
 }
 function openGameManager(){
  if(!state.created){
-  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button><hr>${devModeSectionHtml()}`);
+  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button>${isDevMode()?`<button class="secondary" id="devSeeGameBtn" style="margin-top:8px">🛠️ Voir le coffret (mode dev)</button>`:""}<hr>${devModeSectionHtml()}`);
   document.getElementById("newGameBtn").onclick=openCreateModal;
+  const devSeeGameBtn=document.getElementById("devSeeGameBtn");
+  if(devSeeGameBtn)devSeeGameBtn.onclick=()=>{
+   state=structuredClone(defaultState);state.created=true;state.team="Coffret de test";state.teen="Le jeune";state.parentName="Le parent";
+   state.activeRole="teen";state.room=randomRoom();state.parentLastSeen=Date.now();state.childJoined=true;
+   save();closeModal();showMain()
+  };
   return
  }
  const games=Object.values(store.games);
@@ -723,11 +742,12 @@ function renderLevels(){
  }`;grid.appendChild(d)});
  document.querySelectorAll("[data-level]").forEach(b=>b.onclick=()=>openLevel(Number(b.dataset.level)))
 }
+function finalRevealMessage(){return `🔓 Le coffre s’ouvre… « ${FINAL_CODE_DISPLAY} »\n\nRegardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.`}
 function completeLevel(i){
  if(state.completed[i]){feedback("Ce défi est déjà validé.","success");return}
  const before=state.completed.filter(Boolean).length;
  state.completed[i]=true;save();renderMain();
- feedback(i===LEVELS.length-1?`🔓 Le coffre s’ouvre… « ${FINAL_CODE_DISPLAY} »\n\nRegardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.`:"Niveau validé.");
+ feedback(i===LEVELS.length-1?finalRevealMessage():"Niveau validé.");
  const tile=document.querySelectorAll("#finalCodeTiles .code-tile")[i];
  if(tile){tile.classList.add("new");setTimeout(()=>tile.classList.remove("new"),700)}
  const after=before+1,idx=REWARDS.findIndex((r,i2)=>r.need>before&&r.need<=after&&!state.rewards[i2]);
@@ -920,7 +940,7 @@ function bindLevel(i,isParentView){
  const checkTogether=document.getElementById("checkTogether");
  if(checkTogether)checkTogether.onclick=()=>{
   const t=TOGETHER_META[i];
-  if(t&&matchesAnswer(t,document.getElementById("togetherCode").value)){state.togetherUnlocked=state.togetherUnlocked||{};state.togetherUnlocked[i]=true;save();openLevel(i);playLockOpenAnimation()}
+  if(t&&matchesAnswer(t,document.getElementById("togetherCode").value)){state.togetherUnlocked=state.togetherUnlocked||{};state.togetherUnlocked[i]=true;save();openLevel(i);playLockOpenAnimation("Activité débloquée !")}
   else feedback("Code incorrect. Vérifiez les deux moitiés avec votre enfant/parent.","error")
  };
  const checkFinalRiddles=document.getElementById("checkFinalRiddles");
@@ -938,7 +958,7 @@ function bindLevel(i,isParentView){
  const start=document.getElementById("startTimer");
  if(start){const minutes=i===1?5:i===3?7:i===5?10:15;renderTimerUI(i,minutes);start.onclick=()=>{unlockAudio();startTimer(i,minutes)}}
  const devReplayLock=document.getElementById("devReplayLock");
- if(devReplayLock)devReplayLock.onclick=()=>{playLockOpenAnimation();feedback(`🔓 Le coffre s’ouvre… « ${FINAL_CODE_DISPLAY} »\n\nRegardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.`)};
+ if(devReplayLock)devReplayLock.onclick=()=>playLockOpenAnimation(finalRevealMessage());
  const validateBtn=document.getElementById("validateLevel");
  if(validateBtn)validateBtn.onclick=()=>{
   if(LEVELS[i].mode==="remote"){
@@ -956,7 +976,7 @@ function bindLevel(i,isParentView){
   if(i===11){
    const val=normalize(document.getElementById("finalWord").value).replace(/\s+/g,"");
    if(val!==FINAL_CODE_WORD){feedback("Ce n’est pas encore le bon mot, réessayez ensemble.","error");return}
-   completeLevel(i);playLockOpenAnimation();return
+   completeLevel(i);playLockOpenAnimation(finalRevealMessage());return
   }
   completeLevel(i)
  }
