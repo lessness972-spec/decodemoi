@@ -678,7 +678,7 @@ function renderLevels(){
  document.querySelectorAll("[data-level]").forEach(b=>b.onclick=()=>openLevel(Number(b.dataset.level)))
 }
 function completeLevel(i){
- if(state.completed[i])return;
+ if(state.completed[i]){feedback("Ce défi est déjà validé.","success");return}
  const before=state.completed.filter(Boolean).length;
  state.completed[i]=true;save();renderMain();
  feedback(i===LEVELS.length-1?`🔓 Le coffre s’ouvre… « ${FINAL_CODE_DISPLAY} »\n\nRegardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.`:"Niveau validé.");
@@ -769,6 +769,13 @@ function level9(){return remoteLevel(8)}
 function level10(){return togetherGate(9,`<p>Faites une sortie de 20 à 45 minutes avec la mère, le père ou les deux parents.</p><div class="offline"><strong>Téléphones rangés pour tout le monde.</strong></div><p>Retrouvez quelque chose de rouge, un mot de plus de huit lettres et un objet dont vous ignorez l’utilité.</p><div class="field"><label for="miniTrip">Quel objet vous a le plus intrigués ?</label><input id="miniTrip" maxlength="100"></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level11(){return remoteLevel(10)}
 function level12(){
+ if(state.completed[11]){
+  const tiles=FINAL_CODE_LETTERS.map(ch=>`<div class="code-tile found">${esc(ch)}</div>`).join("");
+  return `<div class="success"><strong>🔓 Le coffre est déjà ouvert !</strong></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
+  <p>« ${esc(FINAL_CODE_DISPLAY)} »</p>
+  <p class="muted">Regardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.</p>`
+ }
  if(!state.finalRiddlesSolved){
   return `<p>Résolvez ensemble les trois dernières énigmes : elles révèlent le dernier élément du code final et donnent accès à l’espace pour l’assembler.</p>
   <div class="notice">Chaque joueur peut proposer une réponse. Une recherche commune reste autorisée après l’utilisation d’un indice.</div>
