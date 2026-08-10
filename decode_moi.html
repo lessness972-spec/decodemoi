@@ -861,8 +861,9 @@ function level12(){
   <p class="muted">Regardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.</p>
   ${isDevMode()?`<button class="secondary" id="devReplayLock" style="margin-top:10px">🛠️ Rejouer l’animation (mode dev)</button>`:""}`
  }
+ const lockHeader=`<img src="assets/lock-closed.png" alt="Cadenas fermé" style="display:block;margin:0 auto 16px;max-width:130px">`;
  if(!state.finalRiddlesSolved){
-  return `<p>Résolvez ensemble les trois dernières énigmes : elles révèlent le dernier élément du code final et donnent accès à l’espace pour l’assembler.</p>
+  return `${lockHeader}<p>Résolvez ensemble les trois dernières énigmes : elles révèlent le dernier élément du code final et donnent accès à l’espace pour l’assembler.</p>
   <div class="notice">Chaque joueur peut proposer une réponse. Une recherche commune reste autorisée après l’utilisation d’un indice.</div>
   <div class="field"><label for="finalOne">1. Combien de côtés possède un hexagone ?</label><input id="finalOne" inputmode="numeric"></div>${devAnswerHint(FINAL_META[0].answer)}
   <div class="field"><label for="finalTwo">2. Quelle est la première lettre du mot « équipe » ?</label><input id="finalTwo" maxlength="2"></div>${devAnswerHint(FINAL_META[1].answer)}
@@ -870,7 +871,7 @@ function level12(){
   <button class="primary" id="checkFinalRiddles">Vérifier</button>`
  }
  const tiles=FINAL_CODE_LETTERS.map((ch,p)=>{const found=letterFoundAt(p);return `<div class="code-tile ${found?"found":""}">${found?esc(ch):"?"}</div>`}).join("");
- return `<p>Le dernier élément du code final est révélé ! Remettez les lettres dans le bon ordre, ensemble, pour trouver le mot complet et ouvrir le coffre.</p>
+ return `${lockHeader}<p>Le dernier élément du code final est révélé ! Remettez les lettres dans le bon ordre, ensemble, pour trouver le mot complet et ouvrir le coffre.</p>
  <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
  <div class="field"><label for="finalWord">Le mot complet (deux mots)</label><input id="finalWord" maxlength="24"></div>${devAnswerHint(FINAL_CODE_DISPLAY)}
  <div class="offline"><strong>Finale ensemble :</strong> une fois le coffre ouvert, choisissez la dernière récompense et fixez sa date.</div>
