@@ -287,25 +287,25 @@ const LEVELS=[
  {mode:"together",title:"Le défi final",tag:"Activité",desc:"Résoudre trois mini-énigmes et débloquer le dernier palier."}
 ];
 const REMOTE_META={
- 0:{question:"Quel nombre complète la suite : 5, 10, 20, 40, ?",salt:"R0",hashes:["16NFRW9"],hint:"Chaque nombre est le double du précédent.",research:"Cherchez ensemble comment reconnaître une suite où chaque nombre est multiplié par deux."},
- 2:{question:"Quel est le plus grand océan du monde ?",salt:"R2",hashes:["1WAQ2A6","16TONEC"],hint:"Il borde notamment l’Asie, l’Océanie et les Amériques.",research:"Cherchez ensemble une carte du monde et comparez la taille des océans."},
- 4:{question:"Dans « Nous partirons demain », quel est l’infinitif du verbe ?",salt:"R4",hashes:["07FHZJR"],hint:"Retire la terminaison du futur pour retrouver le verbe d’origine.",research:"Cherchez ensemble comment se forme le futur simple du verbe partir."},
- 6:{question:"Quelle planète est surnommée la planète rouge ?",salt:"R6",hashes:["05EWLC2"],hint:"Elle porte le nom du dieu romain de la guerre.",research:"Cherchez ensemble les planètes du système solaire et leurs surnoms."},
- 8:{question:"Combien font 15 % de 200 ?",salt:"R8",hashes:["01N9GZM"],hint:"10 % de 200 font 20 et 5 % font 10.",research:"Cherchez ensemble une méthode simple pour calculer un pourcentage."},
- 10:{question:"Qui a peint La Joconde ?",salt:"R10",hashes:["0JIER17","07D99DD"],hint:"C’était un artiste et inventeur italien de la Renaissance.",research:"Cherchez ensemble le musée où se trouve La Joconde et le nom de son peintre."}
+ 0:{question:"Quel nombre complète la suite : 5, 10, 20, 40, ?",salt:"R0",hashes:["16NFRW9"],hint:"Chaque nombre est le double du précédent.",research:"Cherchez ensemble comment reconnaître une suite où chaque nombre est multiplié par deux.",answer:"80"},
+ 2:{question:"Quel est le plus grand océan du monde ?",salt:"R2",hashes:["1WAQ2A6","16TONEC"],hint:"Il borde notamment l’Asie, l’Océanie et les Amériques.",research:"Cherchez ensemble une carte du monde et comparez la taille des océans.",answer:"Pacifique"},
+ 4:{question:"Dans « Nous partirons demain », quel est l’infinitif du verbe ?",salt:"R4",hashes:["07FHZJR"],hint:"Retire la terminaison du futur pour retrouver le verbe d’origine.",research:"Cherchez ensemble comment se forme le futur simple du verbe partir.",answer:"partir"},
+ 6:{question:"Quelle planète est surnommée la planète rouge ?",salt:"R6",hashes:["05EWLC2"],hint:"Elle porte le nom du dieu romain de la guerre.",research:"Cherchez ensemble les planètes du système solaire et leurs surnoms.",answer:"Mars"},
+ 8:{question:"Combien font 15 % de 200 ?",salt:"R8",hashes:["01N9GZM"],hint:"10 % de 200 font 20 et 5 % font 10.",research:"Cherchez ensemble une méthode simple pour calculer un pourcentage.",answer:"30"},
+ 10:{question:"Qui a peint La Joconde ?",salt:"R10",hashes:["0JIER17","07D99DD"],hint:"C’était un artiste et inventeur italien de la Renaissance.",research:"Cherchez ensemble le musée où se trouve La Joconde et le nom de son peintre.",answer:"Léonard de Vinci"}
 };
 const PARENT_META={
- 1:{question:"Quel nombre vient après 3, 6, 12, 24 ?",salt:"P1",hashes:["0JU9LNI"],hint:"Le nombre double à chaque étape.",research:"Cherchez ensemble la règle de cette suite."},
- 3:{question:"Quelle est la capitale de l’Italie ?",salt:"P3",hashes:["0B0CMV1"],hint:"La ville abrite le Colisée.",research:"Cherchez ensemble une carte de l’Italie."},
- 5:{question:"Quel est l’infinitif de « nous finirons » ?",salt:"P5",hashes:["0FNEGIO"],hint:"Retire la terminaison du futur.",research:"Cherchez ensemble la conjugaison de finir au futur."},
- 7:{question:"Combien de planètes compte le système solaire ?",salt:"P7",hashes:["1A8QQX8","051V3ME"],hint:"Pluton est classée comme planète naine.",research:"Cherchez ensemble la liste des planètes."},
- 9:{question:"Combien font 25 % de 80 ?",salt:"P9",hashes:["0S42GT4"],hint:"25 % représentent un quart.",research:"Cherchez ensemble comment calculer un quart de 80."},
- 11:{question:"Dans quel pays se trouve Tokyo ?",salt:"P11",hashes:["1GSHCU7","1JFKCI6"],hint:"C’est un archipel d’Asie.",research:"Cherchez ensemble une carte de l’Asie."}
+ 1:{question:"Quel nombre vient après 3, 6, 12, 24 ?",salt:"P1",hashes:["0JU9LNI"],hint:"Le nombre double à chaque étape.",research:"Cherchez ensemble la règle de cette suite.",answer:"48"},
+ 3:{question:"Quelle est la capitale de l’Italie ?",salt:"P3",hashes:["0B0CMV1"],hint:"La ville abrite le Colisée.",research:"Cherchez ensemble une carte de l’Italie.",answer:"Rome"},
+ 5:{question:"Quel est l’infinitif de « nous finirons » ?",salt:"P5",hashes:["0FNEGIO"],hint:"Retire la terminaison du futur.",research:"Cherchez ensemble la conjugaison de finir au futur.",answer:"finir"},
+ 7:{question:"Combien de planètes compte le système solaire ?",salt:"P7",hashes:["1A8QQX8","051V3ME"],hint:"Pluton est classée comme planète naine.",research:"Cherchez ensemble la liste des planètes.",answer:"8"},
+ 9:{question:"Combien font 25 % de 80 ?",salt:"P9",hashes:["0S42GT4"],hint:"25 % représentent un quart.",research:"Cherchez ensemble comment calculer un quart de 80.",answer:"20"},
+ 11:{question:"Dans quel pays se trouve Tokyo ?",salt:"P11",hashes:["1GSHCU7","1JFKCI6"],hint:"C’est un archipel d’Asie.",research:"Cherchez ensemble une carte de l’Asie.",answer:"Japon"}
 };
 const FINAL_META=[
- {salt:"F1",hashes:["1KT94J2"]},
- {salt:"F2",hashes:["1EBP4UU"]},
- {salt:"F3",hashes:["13VSUQT"]}
+ {salt:"F1",hashes:["1KT94J2"],answer:"6"},
+ {salt:"F2",hashes:["1EBP4UU"],answer:"E"},
+ {salt:"F3",hashes:["13VSUQT"],answer:"dedans"}
 ];
 const TOGETHER_META={
  1:{parentHalf:"FALCON",teenHalf:"ORAGE",salt:"T1",hashes:["1H2GP1X","0H935R7"]},
@@ -335,6 +335,8 @@ const REWARDS=[
  {need:9,badge:"9 niveaux",title:"Sortie choisie",activities:["Cinéma","Bowling ou mini-golf","Musée ou exposition","Restaurant simple","Grande promenade","Activité personnalisée"]},
  {need:12,badge:"12 niveaux",title:"Grande récompense",activities:["Cinéma + repas","Journée dans un lieu choisi","Événement ou spectacle","Activité familiale spéciale","Projet personnalisé"]}
 ];
+const DEV_MODE_KEY="decodeMoiDevMode",DEV_MODE_CODE="SESAME";
+function isDevMode(){return localStorage.getItem(DEV_MODE_KEY)==="1"}
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
@@ -555,6 +557,10 @@ function openGameManager(){
   <div class="field"><label for="testLevelInput">Aller directement au défi n°</label><input id="testLevelInput" type="number" min="1" max="${LEVELS.length}" value="1"></div>
   <button class="secondary" id="testJumpBtn">Aller à ce défi</button>
  </details>
+ <details><summary class="muted" style="cursor:pointer">Mode développeur (voir les réponses, rouvrir le coffre)</summary>
+  <p class="muted" style="margin:8px 0">${isDevMode()?"Actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.":"Entrez le code spécial pour afficher les réponses de chaque défi et pouvoir rejouer l’ouverture du coffre autant de fois que voulu."}</p>
+  ${isDevMode()?`<button class="danger" id="devDeactivateBtn">Désactiver le mode développeur</button>`:`<div class="field"><label for="devCodeInput">Code spécial</label><input id="devCodeInput" placeholder="Code secret"></div><button class="secondary" id="devActivateBtn">Activer</button>`}
+ </details>
  <hr><div class="action-row"><button class="primary" id="newGameBtn">Nouvelle partie</button><button class="danger" id="deleteCurrentBtn">Recommencer / quitter cette partie</button></div>`);
  document.querySelectorAll("[data-role]").forEach(btn=>btn.onclick=()=>{state.activeRole=btn.dataset.role;save();closeModal();renderMain()});
  document.querySelectorAll("[data-open-room]").forEach(btn=>btn.onclick=()=>activateGame(btn.dataset.openRoom));
@@ -571,6 +577,14 @@ function openGameManager(){
   save();closeModal();showMain();
   setTimeout(()=>openLevel(target),150)
  };
+ const devActivateBtn=document.getElementById("devActivateBtn");
+ if(devActivateBtn)devActivateBtn.onclick=()=>{
+  const code=document.getElementById("devCodeInput").value.trim().toUpperCase();
+  if(code!==DEV_MODE_CODE){feedback("Code incorrect.","error");return}
+  localStorage.setItem(DEV_MODE_KEY,"1");closeModal();openGameManager()
+ };
+ const devDeactivateBtn=document.getElementById("devDeactivateBtn");
+ if(devDeactivateBtn)devDeactivateBtn.onclick=()=>{localStorage.removeItem(DEV_MODE_KEY);closeModal();openGameManager()};
  document.getElementById("mgrSendCoffret").onclick=openInviteChild;
  document.getElementById("mgrInviteRelay").onclick=sendRelayNotice;
  document.getElementById("mgrShareApp").onclick=shareAppFile;
@@ -581,7 +595,7 @@ function openGameManager(){
   closeModal();openGameManager();
   feedback(perm==="granted"?"Notifications activées.":"Notifications non activées.",perm==="granted"?"success":"error")
  };
- document.getElementById("mgrToggleSound").onclick=()=>{setSoundEnabled(!soundEnabled());closeModal();openGameManager()}
+ document.getElementById("mgrToggleSound").onclick=()=>{setSoundEnabled(!soundEnabled());unlockAudio();if(soundEnabled())playTone(880,0.15,0.12);closeModal();openGameManager()}
 }
 function openRewardsModal(){
  const done=state.completed.filter(Boolean).length;
@@ -753,20 +767,22 @@ function sharedPromptBlock(i,mineVal,otherVal,otherName){
  if(mineVal&&!otherVal)return `<hr><div class="notice"><strong>💬 ${esc(sp.category)}</strong><p>${esc(sp.question)}</p><p class="muted">Réponse enregistrée. Vous verrez celle de ${esc(otherName)} dès qu’il/elle aura répondu aussi.</p></div>`;
  return `<hr><div class="notice"><strong>💬 Petit à-côté (facultatif) :</strong> ${esc(sp.question)}</div><div class="field"><label for="sharedAnswerInput">Ta réponse</label><textarea id="sharedAnswerInput" placeholder="Juste pour vous deux, ça n’empêche pas de valider le niveau"></textarea></div><button class="secondary" id="submitSharedAnswer">Envoyer ma réponse</button>`
 }
-function remoteLevel(i){const m=REMOTE_META[i],sa=state.sharedAnswers[i]||{};return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>${sharedPromptBlock(i,sa.teen,sa.parent,state.parentName||"le parent")}`}
+function devAnswerHint(answer){return isDevMode()&&answer?`<p class="muted" style="font-size:.8rem">🛠️ Mode dev — réponse : ${esc(answer)}</p>`:""}
+function remoteLevel(i){const m=REMOTE_META[i],sa=state.sharedAnswers[i]||{};return `<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>${sharedPromptBlock(i,sa.teen,sa.parent,state.parentName||"le parent")}`}
 function togetherGate(i,activityHtml){
  const t=TOGETHER_META[i];
  if(!t||(state.togetherUnlocked&&state.togetherUnlocked[i]))return activityHtml;
+ const devBoth=isDevMode()?`<p class="muted" style="font-size:.8rem">🛠️ Mode dev — code complet : ${esc(t.parentHalf)}${esc(t.teenHalf)}</p>`:"";
  if(state.activeRole==="parent"){
-  return `<p class="muted" style="margin-top:-4px">Vue parent : ta moitié du code.</p><div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.parentHalf)}</div><p>Retrouve ${esc(state.teen||"le jeune")}, échangez vos moitiés à voix haute, et fais-lui taper le code complet sur son téléphone pour débloquer l’activité.</p>`
+  return `<p class="muted" style="margin-top:-4px">Vue parent : ta moitié du code.</p><div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.parentHalf)}</div><p>Retrouve ${esc(state.teen||"le jeune")}, échangez vos moitiés à voix haute, et fais-lui taper le code complet sur son téléphone pour débloquer l’activité.</p>${devBoth}`
  }
- return `<div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.teenHalf)}</div><p>Demande à ${esc(state.parentName||"ton parent")} sa moitié du code (visible sur son téléphone), assemblez-les, puis tape le code complet ci-dessous.</p><div class="field"><label for="togetherCode">Code complet</label><input id="togetherCode" placeholder="Les deux moitiés assemblées"></div><button class="primary" id="checkTogether">Débloquer l’activité</button>`
+ return `<div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.teenHalf)}</div><p>Demande à ${esc(state.parentName||"ton parent")} sa moitié du code (visible sur son téléphone), assemblez-les, puis tape le code complet ci-dessous.</p>${devBoth}<div class="field"><label for="togetherCode">Code complet</label><input id="togetherCode" placeholder="Les deux moitiés assemblées"></div><button class="primary" id="checkTogether">Débloquer l’activité</button>`
 }
 function parentOwnAnswer(i){
  const stage=i+1,m=PARENT_META[stage],sa=state.sharedAnswers[i]||{},shared=sharedPromptBlock(i,sa.parent,sa.teen,state.teen||"le jeune");
  if(!m)return `<div class="notice">Pas d’énigme parent pour ce niveau.</div>${shared}`;
  if(state.parentAnswers[i])return `<div class="success"><strong>Tu as déjà répondu à cette énigme ✓</strong></div><p class="muted">${esc(state.teen||"Le jeune")} peut valider ce niveau depuis son appareil.</p>${shared}`;
- return `<p>${esc(m.question)}</p><div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkParentOwn">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p></div><button class="primary hidden" id="submitParentOwn">Confirmer la réponse</button>${shared}`
+ return `<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkParentOwn">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p></div><button class="primary hidden" id="submitParentOwn">Confirmer la réponse</button>${shared}`
 }
 
 function relayInput(i){
@@ -799,20 +815,21 @@ function level12(){
   return `<div class="success"><strong>🔓 Le coffre est déjà ouvert !</strong></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
   <p>« ${esc(FINAL_CODE_DISPLAY)} »</p>
-  <p class="muted">Regardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.</p>`
+  <p class="muted">Regardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.</p>
+  ${isDevMode()?`<button class="secondary" id="devReplayLock" style="margin-top:10px">🛠️ Rejouer l’animation (mode dev)</button>`:""}`
  }
  if(!state.finalRiddlesSolved){
   return `<p>Résolvez ensemble les trois dernières énigmes : elles révèlent le dernier élément du code final et donnent accès à l’espace pour l’assembler.</p>
   <div class="notice">Chaque joueur peut proposer une réponse. Une recherche commune reste autorisée après l’utilisation d’un indice.</div>
-  <div class="field"><label for="finalOne">1. Combien de côtés possède un hexagone ?</label><input id="finalOne" inputmode="numeric"></div>
-  <div class="field"><label for="finalTwo">2. Quelle est la première lettre du mot « équipe » ?</label><input id="finalTwo" maxlength="2"></div>
-  <div class="field"><label for="finalThree">3. Quel est le contraire de « dehors » ?</label><input id="finalThree" maxlength="20"></div>
+  <div class="field"><label for="finalOne">1. Combien de côtés possède un hexagone ?</label><input id="finalOne" inputmode="numeric"></div>${devAnswerHint(FINAL_META[0].answer)}
+  <div class="field"><label for="finalTwo">2. Quelle est la première lettre du mot « équipe » ?</label><input id="finalTwo" maxlength="2"></div>${devAnswerHint(FINAL_META[1].answer)}
+  <div class="field"><label for="finalThree">3. Quel est le contraire de « dehors » ?</label><input id="finalThree" maxlength="20"></div>${devAnswerHint(FINAL_META[2].answer)}
   <button class="primary" id="checkFinalRiddles">Vérifier</button>`
  }
  const tiles=FINAL_CODE_LETTERS.map((ch,p)=>{const found=letterFoundAt(p);return `<div class="code-tile ${found?"found":""}">${found?esc(ch):"?"}</div>`}).join("");
  return `<p>Le dernier élément du code final est révélé ! Remettez les lettres dans le bon ordre, ensemble, pour trouver le mot complet et ouvrir le coffre.</p>
  <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
- <div class="field"><label for="finalWord">Le mot complet (deux mots)</label><input id="finalWord" maxlength="24"></div>
+ <div class="field"><label for="finalWord">Le mot complet (deux mots)</label><input id="finalWord" maxlength="24"></div>${devAnswerHint(FINAL_CODE_DISPLAY)}
  <div class="offline"><strong>Finale ensemble :</strong> une fois le coffre ouvert, choisissez la dernière récompense et fixez sa date.</div>
  <button class="primary" id="validateLevel">Ouvrir le coffre</button>`
 }
@@ -826,18 +843,24 @@ function timerNotDone(i,minutes){const r=timerRemaining(i,minutes);return r===nu
 const SOUND_KEY="decodeMoiSoundOn";
 function soundEnabled(){const v=localStorage.getItem(SOUND_KEY);return v===null?true:v==="1"}
 function setSoundEnabled(on){localStorage.setItem(SOUND_KEY,on?"1":"0")}
+let sharedAudioCtx=null;
+function unlockAudio(){
+ try{
+  if(!sharedAudioCtx){const Ctx=window.AudioContext||window.webkitAudioContext;sharedAudioCtx=new Ctx()}
+  if(sharedAudioCtx.state==="suspended")sharedAudioCtx.resume().catch(()=>{})
+ }catch(e){}
+}
 function playTone(freq,duration,volume){
  if(!soundEnabled())return;
  try{
-  const Ctx=window.AudioContext||window.webkitAudioContext;
-  const ctx=new Ctx();
+  unlockAudio();
+  const ctx=sharedAudioCtx;
   const osc=ctx.createOscillator(),gain=ctx.createGain();
   osc.frequency.value=freq;osc.type="sine";
   gain.gain.setValueAtTime(volume,ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+duration);
   osc.connect(gain);gain.connect(ctx.destination);
-  osc.start();osc.stop(ctx.currentTime+duration);
-  osc.onended=()=>ctx.close()
+  osc.start();osc.stop(ctx.currentTime+duration)
  }catch(e){}
 }
 function playTimerWarningSound(){playTone(880,0.18,0.12)}
@@ -906,7 +929,9 @@ function bindLevel(i,isParentView){
   state.finalRiddlesSolved=true;save();openLevel(i)
  };
  const start=document.getElementById("startTimer");
- if(start){const minutes=i===1?5:i===3?7:i===5?10:15;renderTimerUI(i,minutes);start.onclick=()=>startTimer(i,minutes)}
+ if(start){const minutes=i===1?5:i===3?7:i===5?10:15;renderTimerUI(i,minutes);start.onclick=()=>{unlockAudio();startTimer(i,minutes)}}
+ const devReplayLock=document.getElementById("devReplayLock");
+ if(devReplayLock)devReplayLock.onclick=()=>{playLockOpenAnimation();feedback(`🔓 Le coffre s’ouvre… « ${FINAL_CODE_DISPLAY} »\n\nRegardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.`)};
  const validateBtn=document.getElementById("validateLevel");
  if(validateBtn)validateBtn.onclick=()=>{
   if(LEVELS[i].mode==="remote"){
@@ -963,7 +988,7 @@ async function openParentAnswer(room){
 }
 function openParentRelay(room,stage,server,presence){
  const m=PARENT_META[stage],i=stage-1,sa=(server.sharedAnswers&&server.sharedAnswers[i])||{},shared=sharedPromptBlock(i,sa.parent,sa.teen,server.teen||"le jeune");
- openModal("Relais du niveau "+stage,"Relais",`${presence||""}<p>${esc(m.question)}</p><div class="field"><label for="parentPuzzleAnswer">Réponse</label><input id="parentPuzzleAnswer"></div><button class="secondary" id="checkParentPuzzle">Vérifier</button><div id="parentHintGate" class="hidden"><div class="notice"><strong>Indice disponible :</strong> réponds à une question personnelle ou utilise JOKER.</div><div class="field"><label for="parentCategory">Catégorie</label><select id="parentCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div><div class="field"><label for="parentPrompt">Question</label><input id="parentPrompt" readonly></div><div class="field"><label for="parentPersonalAnswer">Réponse ou JOKER</label><textarea id="parentPersonalAnswer"></textarea></div><button class="secondary" id="unlockParentHint">Afficher l’indice</button></div><div id="parentHintBox" class="hintbox hidden"><strong>Indice :</strong> ${esc(m.hint)}</div><div id="parentResearch" class="searchbox hidden"><strong>Recherche ensemble obligatoire :</strong> ${esc(m.research)}</div><button class="primary hidden" id="sendParentAnswer">Envoyer la réponse</button><div id="generatedArea"></div>${shared}`);
+ openModal("Relais du niveau "+stage,"Relais",`${presence||""}<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="parentPuzzleAnswer">Réponse</label><input id="parentPuzzleAnswer"></div><button class="secondary" id="checkParentPuzzle">Vérifier</button><div id="parentHintGate" class="hidden"><div class="notice"><strong>Indice disponible :</strong> réponds à une question personnelle ou utilise JOKER.</div><div class="field"><label for="parentCategory">Catégorie</label><select id="parentCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div><div class="field"><label for="parentPrompt">Question</label><input id="parentPrompt" readonly></div><div class="field"><label for="parentPersonalAnswer">Réponse ou JOKER</label><textarea id="parentPersonalAnswer"></textarea></div><button class="secondary" id="unlockParentHint">Afficher l’indice</button></div><div id="parentHintBox" class="hintbox hidden"><strong>Indice :</strong> ${esc(m.hint)}</div><div id="parentResearch" class="searchbox hidden"><strong>Recherche ensemble obligatoire :</strong> ${esc(m.research)}</div><button class="primary hidden" id="sendParentAnswer">Envoyer la réponse</button><div id="generatedArea"></div>${shared}`);
  let correct=false,attempts=0;
  document.getElementById("parentCategory").onchange=()=>{const choices=PERSONAL_PROMPTS[document.getElementById("parentCategory").value]||[];document.getElementById("parentPrompt").value=choices.length?choices[Math.floor(Math.random()*choices.length)]:""};
  document.getElementById("checkParentPuzzle").onclick=()=>{correct=matchesAnswer(m,document.getElementById("parentPuzzleAnswer").value);if(correct){feedback("Bonne réponse.");document.getElementById("sendParentAnswer").classList.remove("hidden")}else{attempts++;document.getElementById("parentHintGate").classList.remove("hidden");if(attempts>=2)document.getElementById("parentResearch").classList.remove("hidden");feedback(attempts===1?"Un indice peut être débloqué.":"La recherche devra être faite ensemble.","error")}};
