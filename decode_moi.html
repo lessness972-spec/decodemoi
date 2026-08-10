@@ -866,13 +866,14 @@ function bindLevel(i,isParentView){
  };
  const checkFinalRiddles=document.getElementById("checkFinalRiddles");
  if(checkFinalRiddles)checkFinalRiddles.onclick=()=>{
-  const one=normalize(document.getElementById("finalOne").value);
-  const two=normalize(document.getElementById("finalTwo").value);
-  const three=normalize(document.getElementById("finalThree").value);
-  if(![one,two,three].every((value,index)=>matchesAnswer(FINAL_META[index],value))){
-   feedback("Une ou plusieurs réponses sont incorrectes.","error");
-   return
-  }
+  const fieldIds=["finalOne","finalTwo","finalThree"];
+  let allOk=true;
+  fieldIds.forEach((id,index)=>{
+   const el=document.getElementById(id),ok=matchesAnswer(FINAL_META[index],el.value);
+   el.style.borderColor=ok?"":"var(--danger)";
+   if(!ok)allOk=false
+  });
+  if(!allOk){feedback("Au moins une réponse est incorrecte (bordure rouge).","error");return}
   state.finalRiddlesSolved=true;save();openLevel(i)
  };
  const start=document.getElementById("startTimer");
