@@ -137,6 +137,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 
 .code-tile.found{background:var(--cyan);color:#031522;border-color:transparent}
 .code-tile.new{animation:codePop .6s ease}
 @keyframes codePop{0%{transform:scale(1)}35%{transform:scale(1.35)}100%{transform:scale(1)}}
+.lock-anim{font-size:56px;text-align:center;margin:6px 0 16px}
+.lock-anim.unlocked{animation:lockPop .6s ease}
+@keyframes lockPop{0%{transform:scale(1) rotate(0)}40%{transform:scale(1.3) rotate(-15deg)}70%{transform:scale(1.15) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
 .muted{color:var(--muted);line-height:1.5}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
 .level{border:1px solid var(--card-border);border-radius:18px;padding:17px;background:var(--card);min-height:245px;display:flex;flex-direction:column;transition:transform .16s ease,border-color .16s ease}
@@ -507,6 +510,13 @@ function stopParentHeartbeat(){if(parentHeartbeatTimer){clearInterval(parentHear
 function pingParentPresence(room){fetch(roomApiUrl(room),{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({room,team:"",teen:"",parentName:"",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},parentLastSeen:Date.now()})}).catch(()=>{})}
 function closeModal(){modal.classList.add("hidden");currentOpenLevel=null;stopParentHeartbeat()}
 function feedback(msg,type="success"){const old=modalBody.querySelector(".feedback");if(old)old.remove();const d=document.createElement("div");d.className=type+" feedback";d.textContent=msg;modalBody.prepend(d)}
+function playLockOpenAnimation(){
+ const old=modalBody.querySelector(".lock-anim");if(old)old.remove();
+ const el=document.createElement("div");el.className="lock-anim";el.textContent="🔒";
+ modalBody.prepend(el);
+ setTimeout(()=>{el.textContent="🔓";el.classList.add("unlocked")},450);
+ setTimeout(()=>{if(el.parentNode)el.remove()},2600)
+}
 document.getElementById("closeModal").onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 function showHome(){home.classList.remove("hidden");mainGame.classList.add("hidden");parentGame.classList.add("hidden")}
 function showMain(){home.classList.add("hidden");mainGame.classList.remove("hidden");parentGame.classList.add("hidden");renderMain()}
@@ -880,7 +890,7 @@ function bindLevel(i,isParentView){
  const checkTogether=document.getElementById("checkTogether");
  if(checkTogether)checkTogether.onclick=()=>{
   const t=TOGETHER_META[i];
-  if(t&&matchesAnswer(t,document.getElementById("togetherCode").value)){state.togetherUnlocked=state.togetherUnlocked||{};state.togetherUnlocked[i]=true;save();openLevel(i)}
+  if(t&&matchesAnswer(t,document.getElementById("togetherCode").value)){state.togetherUnlocked=state.togetherUnlocked||{};state.togetherUnlocked[i]=true;save();openLevel(i);playLockOpenAnimation()}
   else feedback("Code incorrect. Vérifiez les deux moitiés avec votre enfant/parent.","error")
  };
  const checkFinalRiddles=document.getElementById("checkFinalRiddles");
@@ -914,6 +924,7 @@ function bindLevel(i,isParentView){
   if(i===11){
    const val=normalize(document.getElementById("finalWord").value).replace(/\s+/g,"");
    if(val!==FINAL_CODE_WORD){feedback("Ce n’est pas encore le bon mot, réessayez ensemble.","error");return}
+   completeLevel(i);playLockOpenAnimation();return
   }
   completeLevel(i)
  }
