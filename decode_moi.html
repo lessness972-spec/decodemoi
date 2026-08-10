@@ -543,7 +543,8 @@ function openCreateModal(){
  <button class="primary" id="confirmCreate">Créer</button>`)
 }
 function devModeSectionHtml(){
- return `<p class="muted" style="margin:8px 0;font-size:.82rem">${isDevMode()?"🛠️ Mode développeur actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.":"Astuce cachée : touchez « by Dee Kréations » en haut de l’écran et entrez le code pour activer le mode développeur."}</p>`
+ if(!isDevMode())return "";
+ return `<p class="muted" style="margin:8px 0;font-size:.82rem">🛠️ Mode développeur actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.</p>`
 }
 function openGameManager(){
  if(!state.created){
@@ -731,6 +732,7 @@ function renderMain(){
  renderLevels()
 }
 function levelStatus(i){
+ if(isDevMode())return{open:true,why:""};
  if(i>0&&!state.completed[i-1])return{open:false,why:"Le niveau précédent doit être validé."};
  return{open:true,why:""}
 }
