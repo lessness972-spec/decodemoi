@@ -529,8 +529,29 @@ function openCreateModal(){
  <div class="field"><label for="newParent">Nom affiché pour le parent partenaire</label><input id="newParent" maxlength="24" placeholder="Ex. Maman, Papa, Mes parents"></div>
  <button class="primary" id="confirmCreate">Créer</button>`)
 }
+function devModeSectionHtml(){
+ return `<details><summary class="muted" style="cursor:pointer">Mode développeur (voir les réponses, rouvrir le coffre)</summary>
+ <p class="muted" style="margin:8px 0">${isDevMode()?"Actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.":"Entrez le code spécial pour afficher les réponses de chaque défi et pouvoir rejouer l’ouverture du coffre autant de fois que voulu."}</p>
+ ${isDevMode()?`<button class="danger" id="devDeactivateBtn">Désactiver le mode développeur</button>`:`<div class="field"><label for="devCodeInput">Code spécial</label><input id="devCodeInput" placeholder="Code secret"></div><button class="secondary" id="devActivateBtn">Activer</button>`}
+ </details>`
+}
+function bindDevModeButtons(){
+ const devActivateBtn=document.getElementById("devActivateBtn");
+ if(devActivateBtn)devActivateBtn.onclick=()=>{
+  const code=document.getElementById("devCodeInput").value.trim().toUpperCase();
+  if(code!==DEV_MODE_CODE){feedback("Code incorrect.","error");return}
+  localStorage.setItem(DEV_MODE_KEY,"1");closeModal();openGameManager()
+ };
+ const devDeactivateBtn=document.getElementById("devDeactivateBtn");
+ if(devDeactivateBtn)devDeactivateBtn.onclick=()=>{localStorage.removeItem(DEV_MODE_KEY);closeModal();openGameManager()}
+}
 function openGameManager(){
- if(!state.created){openCreateModal();return}
+ if(!state.created){
+  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button><hr>${devModeSectionHtml()}`);
+  document.getElementById("newGameBtn").onclick=openCreateModal;
+  bindDevModeButtons();
+  return
+ }
  const games=Object.values(store.games);
  const cards=games.map(game=>`<article class="card"><h3>${esc(game.team||"Partie sans nom")}</h3><p>${esc(game.teen||"Jeune")} + ${esc(game.parentName||"Parent")}<br><small>Code ${esc(game.room)}</small></p><div class="action-row"><button class="secondary" data-open-room="${esc(game.room)}">Ouvrir</button>${game.room===state.room?"":`<button class="danger" data-delete-room="${esc(game.room)}">Supprimer</button>`}</div></article>`).join("");
  openModal("Options","Réglages",`
@@ -557,10 +578,7 @@ function openGameManager(){
   <div class="field"><label for="testLevelInput">Aller directement au défi n°</label><input id="testLevelInput" type="number" min="1" max="${LEVELS.length}" value="1"></div>
   <button class="secondary" id="testJumpBtn">Aller à ce défi</button>
  </details>
- <details><summary class="muted" style="cursor:pointer">Mode développeur (voir les réponses, rouvrir le coffre)</summary>
-  <p class="muted" style="margin:8px 0">${isDevMode()?"Actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.":"Entrez le code spécial pour afficher les réponses de chaque défi et pouvoir rejouer l’ouverture du coffre autant de fois que voulu."}</p>
-  ${isDevMode()?`<button class="danger" id="devDeactivateBtn">Désactiver le mode développeur</button>`:`<div class="field"><label for="devCodeInput">Code spécial</label><input id="devCodeInput" placeholder="Code secret"></div><button class="secondary" id="devActivateBtn">Activer</button>`}
- </details>
+ ${devModeSectionHtml()}
  <hr><div class="action-row"><button class="primary" id="newGameBtn">Nouvelle partie</button><button class="danger" id="deleteCurrentBtn">Recommencer / quitter cette partie</button></div>`);
  document.querySelectorAll("[data-role]").forEach(btn=>btn.onclick=()=>{state.activeRole=btn.dataset.role;save();closeModal();renderMain()});
  document.querySelectorAll("[data-open-room]").forEach(btn=>btn.onclick=()=>activateGame(btn.dataset.openRoom));
@@ -577,14 +595,7 @@ function openGameManager(){
   save();closeModal();showMain();
   setTimeout(()=>openLevel(target),150)
  };
- const devActivateBtn=document.getElementById("devActivateBtn");
- if(devActivateBtn)devActivateBtn.onclick=()=>{
-  const code=document.getElementById("devCodeInput").value.trim().toUpperCase();
-  if(code!==DEV_MODE_CODE){feedback("Code incorrect.","error");return}
-  localStorage.setItem(DEV_MODE_KEY,"1");closeModal();openGameManager()
- };
- const devDeactivateBtn=document.getElementById("devDeactivateBtn");
- if(devDeactivateBtn)devDeactivateBtn.onclick=()=>{localStorage.removeItem(DEV_MODE_KEY);closeModal();openGameManager()};
+ bindDevModeButtons();
  document.getElementById("mgrSendCoffret").onclick=openInviteChild;
  document.getElementById("mgrInviteRelay").onclick=sendRelayNotice;
  document.getElementById("mgrShareApp").onclick=shareAppFile;
