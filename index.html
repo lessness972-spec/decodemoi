@@ -192,7 +192,7 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
 <div class="shell">
 <header class="topbar">
   <div class="brand">
-    <div class="brand-copy"><div class="header-title">Décode-Moi</div><small>by Dee Kréations</small></div>
+    <div class="brand-copy"><div class="header-title">Décode-Moi</div><small id="deeKreationsTap" style="cursor:default">by Dee Kréations</small></div>
   </div>
   <div style="display:flex;gap:8px">
     <button class="ghost" id="rulesBtn">Règles</button>
@@ -335,7 +335,7 @@ const REWARDS=[
  {need:9,badge:"9 niveaux",title:"Sortie choisie",activities:["Cinéma","Bowling ou mini-golf","Musée ou exposition","Restaurant simple","Grande promenade","Activité personnalisée"]},
  {need:12,badge:"12 niveaux",title:"Grande récompense",activities:["Cinéma + repas","Journée dans un lieu choisi","Événement ou spectacle","Activité familiale spéciale","Projet personnalisé"]}
 ];
-const DEV_MODE_KEY="decodeMoiDevMode",DEV_MODE_CODE="SESAME";
+const DEV_MODE_KEY="decodeMoiDevMode";
 function isDevMode(){return localStorage.getItem(DEV_MODE_KEY)==="1"}
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
@@ -530,26 +530,19 @@ function openCreateModal(){
  <button class="primary" id="confirmCreate">Créer</button>`)
 }
 function devModeSectionHtml(){
- return `<details><summary class="muted" style="cursor:pointer">Mode développeur (voir les réponses, rouvrir le coffre)</summary>
- <p class="muted" style="margin:8px 0">${isDevMode()?"Actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.":"Entrez le code spécial pour afficher les réponses de chaque défi et pouvoir rejouer l’ouverture du coffre autant de fois que voulu."}</p>
- ${isDevMode()?`<button class="danger" id="devDeactivateBtn">Désactiver le mode développeur</button>`:`<div class="field"><label for="devCodeInput">Code spécial</label><input id="devCodeInput" placeholder="Code secret"></div><button class="secondary" id="devActivateBtn">Activer</button>`}
- </details>`
+ return `<p class="muted" style="margin:8px 0;font-size:.82rem">${isDevMode()?"🛠️ Mode développeur actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.":"Astuce cachée : tapez 5 fois rapidement sur « by Dee Kréations » en haut de l’écran pour activer le mode développeur."}</p>`
 }
-function bindDevModeButtons(){
- const devActivateBtn=document.getElementById("devActivateBtn");
- if(devActivateBtn)devActivateBtn.onclick=()=>{
-  const code=document.getElementById("devCodeInput").value.trim().toUpperCase();
-  if(code!==DEV_MODE_CODE){feedback("Code incorrect.","error");return}
-  localStorage.setItem(DEV_MODE_KEY,"1");closeModal();openGameManager()
- };
- const devDeactivateBtn=document.getElementById("devDeactivateBtn");
- if(devDeactivateBtn)devDeactivateBtn.onclick=()=>{localStorage.removeItem(DEV_MODE_KEY);closeModal();openGameManager()}
+function createQuickTestGame(){
+ state=structuredClone(defaultState);state.created=true;state.team="Test";state.teen="Testeur";state.parentName="Testeur parent";
+ state.activeRole="teen";state.room=randomRoom();state.parentLastSeen=Date.now();state.childJoined=true;
+ save();closeModal();showMain()
 }
 function openGameManager(){
  if(!state.created){
-  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button><hr>${devModeSectionHtml()}`);
+  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button>${isDevMode()?`<button class="secondary" id="quickTestBtn" style="margin-top:8px">🛠️ Créer une partie de test (rapide)</button>`:""}<hr>${devModeSectionHtml()}`);
   document.getElementById("newGameBtn").onclick=openCreateModal;
-  bindDevModeButtons();
+  const quickTestBtn=document.getElementById("quickTestBtn");
+  if(quickTestBtn)quickTestBtn.onclick=createQuickTestGame;
   return
  }
  const games=Object.values(store.games);
@@ -595,7 +588,6 @@ function openGameManager(){
   save();closeModal();showMain();
   setTimeout(()=>openLevel(target),150)
  };
- bindDevModeButtons();
  document.getElementById("mgrSendCoffret").onclick=openInviteChild;
  document.getElementById("mgrInviteRelay").onclick=sendRelayNotice;
  document.getElementById("mgrShareApp").onclick=shareAppFile;
@@ -640,6 +632,19 @@ if(window.__openRoomAnswer)openParentAnswer(window.__openRoomAnswer);
 
 document.getElementById("createBtn").onclick=openCreateModal;
 document.getElementById("manageBtn").onclick=openGameManager;
+(function(){
+ let taps=0,lastTap=0;
+ document.getElementById("deeKreationsTap").addEventListener("click",()=>{
+  const now=Date.now();
+  taps=(now-lastTap<600)?taps+1:1;lastTap=now;
+  if(taps>=5){
+   taps=0;
+   const nowOn=!isDevMode();
+   if(nowOn)localStorage.setItem(DEV_MODE_KEY,"1");else localStorage.removeItem(DEV_MODE_KEY);
+   alert(nowOn?"🛠️ Mode développeur activé.":"Mode développeur désactivé.")
+  }
+ })
+})();
 document.getElementById("progressCard").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.target.click()}});
 document.addEventListener("click",e=>{
  if(e.target?.id==="confirmCreate"){
