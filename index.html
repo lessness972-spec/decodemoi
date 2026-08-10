@@ -522,35 +522,29 @@ function showLockOverlayMessage(overlay,message){
 function playLockOpenAnimation(message){
  const old=document.getElementById("lockOverlay");if(old)old.remove();
  const overlay=document.createElement("div");overlay.className="lock-overlay";overlay.id="lockOverlay";
- overlay.innerHTML=`<img class="lock-media" id="lockOverlayImg" src="assets/lock-closed.png" alt="Cadenas fermé">`;
- document.body.appendChild(overlay);
+ const video=document.createElement("video");
+ video.className="lock-media";video.id="lockOverlayVideo";video.src="assets/chest-opening.mp4";
+ video.playsInline=true;
  let fallbackTimer=setTimeout(()=>showLockOverlayMessage(overlay,message),20000);
- setTimeout(()=>{
-  const img=document.getElementById("lockOverlayImg");
-  if(!img||!overlay.parentNode)return;
-  const video=document.createElement("video");
-  video.className="lock-media";video.id="lockOverlayVideo";video.src="assets/chest-opening.mp4";
-  video.playsInline=true;
-  video.onended=()=>{clearTimeout(fallbackTimer);showLockOverlayMessage(overlay,message)};
-  video.onerror=()=>{clearTimeout(fallbackTimer);showLockOverlayMessage(overlay,message)};
-  video.onloadedmetadata=()=>{
-   if(video.duration&&isFinite(video.duration)){
-    clearTimeout(fallbackTimer);
-    fallbackTimer=setTimeout(()=>showLockOverlayMessage(overlay,message),video.duration*1000+800)
-   }
-  };
-  img.replaceWith(video);
-  const playPromise=video.play();
-  if(playPromise&&playPromise.catch)playPromise.catch(()=>{
-   video.muted=true;
-   video.play().catch(()=>{});
-   if(!overlay.parentNode)return;
-   const unmuteBtn=document.createElement("button");
-   unmuteBtn.className="ghost";unmuteBtn.textContent="🔊 Activer le son";unmuteBtn.style.marginTop="14px";
-   unmuteBtn.onclick=()=>{video.muted=false;unmuteBtn.remove()};
-   overlay.appendChild(unmuteBtn)
-  })
- },500)
+ video.onended=()=>{clearTimeout(fallbackTimer);showLockOverlayMessage(overlay,message)};
+ video.onerror=()=>{clearTimeout(fallbackTimer);showLockOverlayMessage(overlay,message)};
+ video.onloadedmetadata=()=>{
+  if(video.duration&&isFinite(video.duration)){
+   clearTimeout(fallbackTimer);
+   fallbackTimer=setTimeout(()=>showLockOverlayMessage(overlay,message),video.duration*1000+800)
+  }
+ };
+ overlay.appendChild(video);
+ document.body.appendChild(overlay);
+ const playPromise=video.play();
+ if(playPromise&&playPromise.catch)playPromise.catch(()=>{
+  video.muted=true;
+  video.play().catch(()=>{});
+  const unmuteBtn=document.createElement("button");
+  unmuteBtn.className="ghost";unmuteBtn.textContent="🔊 Activer le son";unmuteBtn.style.marginTop="14px";
+  unmuteBtn.onclick=()=>{video.muted=false;unmuteBtn.remove()};
+  overlay.appendChild(unmuteBtn)
+ })
 }
 document.getElementById("closeModal").onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 function showHome(){home.classList.remove("hidden");mainGame.classList.add("hidden");parentGame.classList.add("hidden")}
