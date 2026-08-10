@@ -158,7 +158,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 
 .reward.locked{opacity:.46}.reward.chosen{border-color:rgba(66,203,211,.58)}
 .reward h3{margin:10px 0 6px;color:var(--white);font-size:20px}.reward p{color:var(--muted);font-size:14px;line-height:1.45}
 .badge{display:inline-flex;border-radius:999px;padding:5px 9px;font-family:var(--sans);font-size:10px;font-weight:800;color:#dffcff;border:1px solid rgba(66,203,211,.38);background:rgba(66,203,211,.09)}
-.notice,.success,.error,.offline,.hintbox,.searchbox{margin:14px 0;padding:12px 14px;border-radius:13px;line-height:1.5}
+.notice,.success,.error,.offline,.hintbox,.searchbox{margin:14px 0;padding:12px 14px;border-radius:13px;line-height:1.5;white-space:pre-line}
 .notice{border:1px solid #42516c;background:#151f33;color:#dce7f7}
 .success{border:1px solid rgba(66,203,211,.42);background:rgba(66,203,211,.09);color:#d9fbff}
 .error{border:1px solid rgba(216,102,88,.45);background:rgba(216,102,88,.09);color:#ffe0dc}
@@ -335,8 +335,13 @@ const REWARDS=[
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
-const FINAL_CODE_LETTERS="MERCIPOURTOI".split("");
-const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},childJoined:false,profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+const FINAL_CODE_LETTERS="AMOURETERNEL".split("");
+const FINAL_CODE_WORD=FINAL_CODE_LETTERS.join("");
+const FINAL_CODE_DISPLAY="AMOUR ÉTERNEL";
+const REVEAL_ORDER=[4,5,0,9,1,7,2,11,6,3,10,8];
+const POSITION_TO_LEVEL=Array(LEVELS.length);
+REVEAL_ORDER.forEach((pos,level)=>{POSITION_TO_LEVEL[pos]=level});
+const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},childJoined:false,finalRiddlesSolved:false,profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
  const result=Array(LEVELS.length).fill(false);
@@ -354,6 +359,7 @@ function sanitizeGame(x={}){
  game.timerStarts={...(x.timerStarts||{})};
  game.togetherUnlocked={...(x.togetherUnlocked||{})};
  game.childJoined=Boolean(x.childJoined);
+ game.finalRiddlesSolved=Boolean(x.finalRiddlesSolved);
  game.activeRole=x.activeRole==="parent"?"parent":"teen";
  game.profileData={parent:{...emptyProfile(),...(x.profileData?.parent||{})},teen:{...emptyProfile(),...(x.profileData?.teen||{})}};
  if(!x.profileData){
@@ -412,7 +418,7 @@ function decodeInvite(code){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");w
 function appLink(params){return location.origin+location.pathname+"?"+params}
 
 function roomApiUrl(room){return location.origin+"/api/room/"+encodeURIComponent(room)}
-function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,sharedAnswers:state.sharedAnswers,timerStarts:state.timerStarts,togetherUnlocked:state.togetherUnlocked,childJoined:state.childJoined,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
+function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,sharedAnswers:state.sharedAnswers,timerStarts:state.timerStarts,togetherUnlocked:state.togetherUnlocked,childJoined:state.childJoined,finalRiddlesSolved:state.finalRiddlesSolved,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
 function presenceLabel(ts){
  if(!ts)return "jamais connecté";
  const diff=Date.now()-ts;
@@ -460,6 +466,7 @@ function mergeServerState(server){
  });
  if(server.togetherUnlocked)Object.keys(server.togetherUnlocked).forEach(k=>{if(server.togetherUnlocked[k]&&!state.togetherUnlocked[k]){state.togetherUnlocked[k]=true;changed=true;dirty.add(Number(k))}});
  if(server.childJoined&&!state.childJoined){state.childJoined=true;changed=true}
+ if(server.finalRiddlesSolved&&!state.finalRiddlesSolved){state.finalRiddlesSolved=true;changed=true;dirty.add(LEVELS.length-1)}
  if(typeof server.parentLastSeen==="number"&&server.parentLastSeen>state.parentLastSeen){state.parentLastSeen=server.parentLastSeen;presenceChanged=true}
  if(typeof server.teenLastSeen==="number"&&server.teenLastSeen>state.teenLastSeen){state.teenLastSeen=server.teenLastSeen;presenceChanged=true}
  if(changed){
@@ -640,10 +647,11 @@ function computeMainAction(){
  if(!state.togetherUnlocked[idx])return{label:"Débloquer le défi",action:()=>openLevel(idx)};
  return{label:firstEver?"Commencer le défi":"Continuer l’aventure",action:()=>openLevel(idx)}
 }
+function letterFoundAt(p){const lvl=POSITION_TO_LEVEL[p];return state.completed[lvl]||(lvl===LEVELS.length-1&&state.finalRiddlesSolved)}
 function renderFinalCode(){
- const done=state.completed.filter(Boolean).length;
- document.getElementById("finalCodeCount").textContent="🔐 "+done+" élément"+(done>1?"s":"")+" découvert"+(done>1?"s":"")+" sur "+LEVELS.length;
- document.getElementById("finalCodeTiles").innerHTML=FINAL_CODE_LETTERS.map((ch,i)=>`<div class="code-tile ${state.completed[i]?"found":""}">${state.completed[i]?esc(ch):"?"}</div>`).join("")
+ const done=state.completed.filter(Boolean).length+(state.finalRiddlesSolved&&!state.completed[LEVELS.length-1]?1:0);
+ document.getElementById("finalCodeCount").textContent="🔐 "+done+" élément"+(done>1?"s":"")+" découvert"+(done>1?"s":"")+" sur "+LEVELS.length+(done===LEVELS.length&&!state.completed[LEVELS.length-1]?" — ouvrez le dernier défi ensemble pour assembler le mot !":"");
+ document.getElementById("finalCodeTiles").innerHTML=FINAL_CODE_LETTERS.map((ch,p)=>{const found=letterFoundAt(p);return `<div class="code-tile ${found?"found":""}">${found?esc(ch):"?"}</div>`}).join("")
 }
 function renderMain(){
  const done=state.completed.filter(Boolean).length,idx=currentLevelIndex();
@@ -676,8 +684,8 @@ function completeLevel(i){
  if(state.completed[i])return;
  const before=state.completed.filter(Boolean).length;
  state.completed[i]=true;save();renderMain();
- feedback(i===LEVELS.length-1?`Niveau validé. Le code final révèle : « ${FINAL_CODE_LETTERS.join("")} » !`:"Niveau validé.");
- const tile=document.querySelectorAll("#finalCodeTiles .code-tile")[i];
+ feedback(i===LEVELS.length-1?`🔓 Le coffre s’ouvre… « ${FINAL_CODE_DISPLAY} »\n\nRegardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.`:"Niveau validé.");
+ const tile=document.querySelectorAll("#finalCodeTiles .code-tile")[REVEAL_ORDER[i]];
  if(tile){tile.classList.add("new");setTimeout(()=>tile.classList.remove("new"),700)}
  const after=before+1,idx=REWARDS.findIndex((r,i2)=>r.need>before&&r.need<=after&&!state.rewards[i2]);
  if(idx>=0){
@@ -763,13 +771,22 @@ function level8(){return togetherGate(7,`<p>Préparez ensemble une boisson ou un
 function level9(){return remoteLevel(8)}
 function level10(){return togetherGate(9,`<p>Faites une sortie de 20 à 45 minutes avec la mère, le père ou les deux parents.</p><div class="offline"><strong>Téléphones rangés pour tout le monde.</strong></div><p>Retrouvez quelque chose de rouge, un mot de plus de huit lettres et un objet dont vous ignorez l’utilité.</p><div class="field"><label for="miniTrip">Quel objet vous a le plus intrigués ?</label><input id="miniTrip" maxlength="100"></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level11(){return remoteLevel(10)}
-function level12(){return `<p>Résolvez ensemble les trois mini-énigmes finales.</p>
-<div class="notice">Chaque joueur peut proposer une réponse. Une recherche commune reste autorisée après l’utilisation d’un indice.</div>
-<div class="field"><label for="finalOne">1. Combien de côtés possède un hexagone ?</label><input id="finalOne" inputmode="numeric"></div>
-<div class="field"><label for="finalTwo">2. Quelle est la première lettre du mot « équipe » ?</label><input id="finalTwo" maxlength="2"></div>
-<div class="field"><label for="finalThree">3. Quel est le contraire de « dehors » ?</label><input id="finalThree" maxlength="20"></div>
-<div class="offline"><strong>Finale ensemble :</strong> après validation, choisissez la dernière récompense et fixez sa date.</div>
-<button class="primary" id="validateLevel">Terminer le parcours</button>`}
+function level12(){
+ if(!state.finalRiddlesSolved){
+  return `<p>Résolvez ensemble les trois dernières énigmes : elles révèlent le dernier élément du code final et donnent accès à l’espace pour l’assembler.</p>
+  <div class="notice">Chaque joueur peut proposer une réponse. Une recherche commune reste autorisée après l’utilisation d’un indice.</div>
+  <div class="field"><label for="finalOne">1. Combien de côtés possède un hexagone ?</label><input id="finalOne" inputmode="numeric"></div>
+  <div class="field"><label for="finalTwo">2. Quelle est la première lettre du mot « équipe » ?</label><input id="finalTwo" maxlength="2"></div>
+  <div class="field"><label for="finalThree">3. Quel est le contraire de « dehors » ?</label><input id="finalThree" maxlength="20"></div>
+  <button class="primary" id="checkFinalRiddles">Vérifier</button>`
+ }
+ const tiles=FINAL_CODE_LETTERS.map((ch,p)=>{const found=letterFoundAt(p);return `<div class="code-tile ${found?"found":""}">${found?esc(ch):"?"}</div>`}).join("");
+ return `<p>Le dernier élément du code final est révélé ! Remettez les lettres dans le bon ordre, ensemble, pour trouver le mot complet et ouvrir le coffre.</p>
+ <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
+ <div class="field"><label for="finalWord">Le mot complet (deux mots)</label><input id="finalWord" maxlength="24"></div>
+ <div class="offline"><strong>Finale ensemble :</strong> une fois le coffre ouvert, choisissez la dernière récompense et fixez sa date.</div>
+ <button class="primary" id="validateLevel">Ouvrir le coffre</button>`
+}
 
 function timerRemaining(i,minutes){
  const start=state.timerStarts&&state.timerStarts[i];
@@ -847,6 +864,17 @@ function bindLevel(i,isParentView){
   if(t&&matchesAnswer(t,document.getElementById("togetherCode").value)){state.togetherUnlocked=state.togetherUnlocked||{};state.togetherUnlocked[i]=true;save();openLevel(i)}
   else feedback("Code incorrect. Vérifiez les deux moitiés avec votre enfant/parent.","error")
  };
+ const checkFinalRiddles=document.getElementById("checkFinalRiddles");
+ if(checkFinalRiddles)checkFinalRiddles.onclick=()=>{
+  const one=normalize(document.getElementById("finalOne").value);
+  const two=normalize(document.getElementById("finalTwo").value);
+  const three=normalize(document.getElementById("finalThree").value);
+  if(![one,two,three].every((value,index)=>matchesAnswer(FINAL_META[index],value))){
+   feedback("Une ou plusieurs réponses sont incorrectes.","error");
+   return
+  }
+  state.finalRiddlesSolved=true;save();openLevel(i)
+ };
  const start=document.getElementById("startTimer");
  if(start){const minutes=i===1?5:i===3?7:i===5?10:15;renderTimerUI(i,minutes);start.onclick=()=>startTimer(i,minutes)}
  const validateBtn=document.getElementById("validateLevel");
@@ -864,13 +892,8 @@ function bindLevel(i,isParentView){
   if(i===7&&timerNotDone(7,15)){feedback("Terminez d’abord les quinze minutes sans téléphone.","error");return}
   if(i===9&&!document.getElementById("miniTrip").value.trim()){feedback("Indiquez l’objet qui vous a intrigués.","error");return}
   if(i===11){
-   const one=normalize(document.getElementById("finalOne").value);
-   const two=normalize(document.getElementById("finalTwo").value);
-   const three=normalize(document.getElementById("finalThree").value);
-   if(![one,two,three].every((value,index)=>matchesAnswer(FINAL_META[index],value))){
-    feedback("Une ou plusieurs réponses finales sont incorrectes.","error");
-    return
-   }
+   const val=normalize(document.getElementById("finalWord").value).replace(/\s+/g,"");
+   if(val!==FINAL_CODE_WORD){feedback("Ce n’est pas encore le bon mot, réessayez ensemble.","error");return}
   }
   completeLevel(i)
  }
