@@ -529,10 +529,20 @@ function playLockOpenAnimation(message){
   if(!img||!overlay.parentNode)return;
   const video=document.createElement("video");
   video.className="lock-media";video.id="lockOverlayVideo";video.src="assets/chest-opening.mp4";
-  video.autoplay=true;video.muted=true;video.playsInline=true;
+  video.playsInline=true;
   video.onended=()=>showLockOverlayMessage(overlay,message);
   video.onerror=()=>showLockOverlayMessage(overlay,message);
-  img.replaceWith(video)
+  img.replaceWith(video);
+  const playPromise=video.play();
+  if(playPromise&&playPromise.catch)playPromise.catch(()=>{
+   video.muted=true;
+   video.play().catch(()=>{});
+   if(!overlay.parentNode)return;
+   const unmuteBtn=document.createElement("button");
+   unmuteBtn.className="ghost";unmuteBtn.textContent="🔊 Activer le son";unmuteBtn.style.marginTop="14px";
+   unmuteBtn.onclick=()=>{video.muted=false;unmuteBtn.remove()};
+   overlay.appendChild(unmuteBtn)
+  })
  },500);
  setTimeout(()=>showLockOverlayMessage(overlay,message),4500)
 }
