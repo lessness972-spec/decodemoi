@@ -540,12 +540,27 @@ function openGameManager(){
   <div class="field"><label>Code du coffret</label><div class="code-box">${esc(state.room)}</div></div>
   <button class="ghost" id="mgrCopyCode" style="margin-top:8px">Copier le code</button>
  </details>
+ <details><summary class="muted" style="cursor:pointer">Outils de test (vérifier un défi sans tout rejouer)</summary>
+  <p class="muted" style="margin:8px 0">Marque les défis précédents comme faits et ouvre directement celui choisi, pour le tester seul. Ça modifie la progression sur cet appareil.</p>
+  <div class="field"><label for="testLevelInput">Aller directement au défi n°</label><input id="testLevelInput" type="number" min="1" max="${LEVELS.length}" value="1"></div>
+  <button class="secondary" id="testJumpBtn">Aller à ce défi</button>
+ </details>
  <hr><div class="action-row"><button class="primary" id="newGameBtn">Nouvelle partie</button><button class="danger" id="deleteCurrentBtn">Recommencer / quitter cette partie</button></div>`);
  document.querySelectorAll("[data-role]").forEach(btn=>btn.onclick=()=>{state.activeRole=btn.dataset.role;save();closeModal();renderMain()});
  document.querySelectorAll("[data-open-room]").forEach(btn=>btn.onclick=()=>activateGame(btn.dataset.openRoom));
  document.querySelectorAll("[data-delete-room]").forEach(btn=>btn.onclick=()=>{if(confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(btn.dataset.deleteRoom)});
  document.getElementById("newGameBtn").onclick=openCreateModal;
  document.getElementById("deleteCurrentBtn").onclick=()=>{if(confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(state.room)};
+ document.getElementById("testJumpBtn").onclick=()=>{
+  const n=Math.max(1,Math.min(LEVELS.length,Number(document.getElementById("testLevelInput").value)||1));
+  const target=n-1;
+  for(let k=0;k<LEVELS.length;k++)state.completed[k]=k<target;
+  state.finalRiddlesSolved=false;
+  if(state.togetherUnlocked)delete state.togetherUnlocked[target];
+  if(state.timerStarts)delete state.timerStarts[target];
+  save();closeModal();showMain();
+  setTimeout(()=>openLevel(target),150)
+ };
  document.getElementById("mgrSendCoffret").onclick=openInviteChild;
  document.getElementById("mgrInviteRelay").onclick=sendRelayNotice;
  document.getElementById("mgrShareApp").onclick=shareAppFile;
