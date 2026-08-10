@@ -852,6 +852,13 @@ function level8(){return togetherGate(7,`<p>Préparez ensemble une boisson ou un
 function level9(){return remoteLevel(8)}
 function level10(){return togetherGate(9,`<p>Faites une sortie de 20 à 45 minutes avec la mère, le père ou les deux parents.</p><div class="offline"><strong>Téléphones rangés pour tout le monde.</strong></div><p>Retrouvez quelque chose de rouge, un mot de plus de huit lettres et un objet dont vous ignorez l’utilité.</p><div class="field"><label for="miniTrip">Quel objet vous a le plus intrigués ?</label><input id="miniTrip" maxlength="100"></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level11(){return remoteLevel(10)}
+function riddlesRecapHtml(){
+ return `<details style="margin-top:14px"><summary class="muted" style="cursor:pointer">Revoir les énigmes</summary>
+ <p style="margin-top:10px">1. Combien de côtés possède un hexagone ?</p>${devAnswerHint(FINAL_META[0].answer)}
+ <p>2. Quelle est la première lettre du mot « équipe » ?</p>${devAnswerHint(FINAL_META[1].answer)}
+ <p>3. Quel est le contraire de « dehors » ?</p>${devAnswerHint(FINAL_META[2].answer)}
+ </details>`
+}
 function level12(){
  if(state.completed[11]){
   const tiles=FINAL_CODE_LETTERS.map(ch=>`<div class="code-tile found">${esc(ch)}</div>`).join("");
@@ -859,7 +866,8 @@ function level12(){
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
   <p>« ${esc(FINAL_CODE_DISPLAY)} »</p>
   <p class="muted">Regardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.</p>
-  ${isDevMode()?`<button class="secondary" id="devReplayLock" style="margin-top:10px">🛠️ Rejouer l’animation (mode dev)</button>`:""}`
+  ${isDevMode()?`<button class="secondary" id="devReplayLock" style="margin-top:10px">🛠️ Rejouer l’animation (mode dev)</button>`:""}
+  ${riddlesRecapHtml()}`
  }
  const lockHeader=`<img src="assets/lock-closed.png" alt="Cadenas fermé" style="display:block;margin:0 auto 16px;max-width:130px">`;
  if(!state.finalRiddlesSolved){
@@ -875,7 +883,8 @@ function level12(){
  <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
  <div class="field"><label for="finalWord">Le mot complet (deux mots)</label><input id="finalWord" maxlength="24"></div>${devAnswerHint(FINAL_CODE_DISPLAY)}
  <div class="offline"><strong>Finale ensemble :</strong> une fois le coffre ouvert, choisissez la dernière récompense et fixez sa date.</div>
- <button class="primary" id="validateLevel">Ouvrir le coffre</button>`
+ <button class="primary" id="validateLevel">Ouvrir le coffre</button>
+ ${riddlesRecapHtml()}`
 }
 
 function timerRemaining(i,minutes){
