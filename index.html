@@ -524,14 +524,21 @@ function playLockOpenAnimation(message){
  const overlay=document.createElement("div");overlay.className="lock-overlay";overlay.id="lockOverlay";
  overlay.innerHTML=`<img class="lock-media" id="lockOverlayImg" src="assets/lock-closed.png" alt="Cadenas fermé">`;
  document.body.appendChild(overlay);
+ let fallbackTimer=setTimeout(()=>showLockOverlayMessage(overlay,message),20000);
  setTimeout(()=>{
   const img=document.getElementById("lockOverlayImg");
   if(!img||!overlay.parentNode)return;
   const video=document.createElement("video");
   video.className="lock-media";video.id="lockOverlayVideo";video.src="assets/chest-opening.mp4";
   video.playsInline=true;
-  video.onended=()=>showLockOverlayMessage(overlay,message);
-  video.onerror=()=>showLockOverlayMessage(overlay,message);
+  video.onended=()=>{clearTimeout(fallbackTimer);showLockOverlayMessage(overlay,message)};
+  video.onerror=()=>{clearTimeout(fallbackTimer);showLockOverlayMessage(overlay,message)};
+  video.onloadedmetadata=()=>{
+   if(video.duration&&isFinite(video.duration)){
+    clearTimeout(fallbackTimer);
+    fallbackTimer=setTimeout(()=>showLockOverlayMessage(overlay,message),video.duration*1000+800)
+   }
+  };
   img.replaceWith(video);
   const playPromise=video.play();
   if(playPromise&&playPromise.catch)playPromise.catch(()=>{
@@ -543,8 +550,7 @@ function playLockOpenAnimation(message){
    unmuteBtn.onclick=()=>{video.muted=false;unmuteBtn.remove()};
    overlay.appendChild(unmuteBtn)
   })
- },500);
- setTimeout(()=>showLockOverlayMessage(overlay,message),4500)
+ },500)
 }
 document.getElementById("closeModal").onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal()};document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
 function showHome(){home.classList.remove("hidden");mainGame.classList.add("hidden");parentGame.classList.add("hidden")}
