@@ -530,19 +530,12 @@ function openCreateModal(){
  <button class="primary" id="confirmCreate">Créer</button>`)
 }
 function devModeSectionHtml(){
- return `<p class="muted" style="margin:8px 0;font-size:.82rem">${isDevMode()?"🛠️ Mode développeur actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.":"Astuce cachée : tapez 5 fois rapidement sur « by Dee Kréations » en haut de l’écran pour activer le mode développeur."}</p>`
-}
-function createQuickTestGame(){
- state=structuredClone(defaultState);state.created=true;state.team="Test";state.teen="Testeur";state.parentName="Testeur parent";
- state.activeRole="teen";state.room=randomRoom();state.parentLastSeen=Date.now();state.childJoined=true;
- save();closeModal();showMain()
+ return `<p class="muted" style="margin:8px 0;font-size:.82rem">${isDevMode()?"🛠️ Mode développeur actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.":"Astuce cachée : touchez « by Dee Kréations » en haut de l’écran et entrez le code pour activer le mode développeur."}</p>`
 }
 function openGameManager(){
  if(!state.created){
-  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button>${isDevMode()?`<button class="secondary" id="quickTestBtn" style="margin-top:8px">🛠️ Créer une partie de test (rapide)</button>`:""}<hr>${devModeSectionHtml()}`);
+  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button><hr>${devModeSectionHtml()}`);
   document.getElementById("newGameBtn").onclick=openCreateModal;
-  const quickTestBtn=document.getElementById("quickTestBtn");
-  if(quickTestBtn)quickTestBtn.onclick=createQuickTestGame;
   return
  }
  const games=Object.values(store.games);
@@ -633,16 +626,14 @@ if(window.__openRoomAnswer)openParentAnswer(window.__openRoomAnswer);
 document.getElementById("createBtn").onclick=openCreateModal;
 document.getElementById("manageBtn").onclick=openGameManager;
 (function(){
- let taps=0,lastTap=0;
  document.getElementById("deeKreationsTap").addEventListener("click",()=>{
-  const now=Date.now();
-  taps=(now-lastTap<600)?taps+1:1;lastTap=now;
-  if(taps>=5){
-   taps=0;
-   const nowOn=!isDevMode();
-   if(nowOn)localStorage.setItem(DEV_MODE_KEY,"1");else localStorage.removeItem(DEV_MODE_KEY);
-   alert(nowOn?"🛠️ Mode développeur activé.":"Mode développeur désactivé.")
-  }
+  const code=prompt("Code :");
+  if(code===null)return;
+  if(code.trim()!=="1397"){alert("Code incorrect.");return}
+  const nowOn=!isDevMode();
+  if(nowOn)localStorage.setItem(DEV_MODE_KEY,"1");else localStorage.removeItem(DEV_MODE_KEY);
+  alert(nowOn?"🛠️ Mode développeur activé.":"Mode développeur désactivé.");
+  if(state.created)renderMain()
  })
 })();
 document.getElementById("progressCard").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.target.click()}});
