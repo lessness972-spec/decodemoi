@@ -335,12 +335,9 @@ const REWARDS=[
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
-const FINAL_CODE_LETTERS="AMOURETERNEL".split("");
-const FINAL_CODE_WORD=FINAL_CODE_LETTERS.join("");
+const FINAL_CODE_LETTERS=["R","E","A","N","M","E","O","L","T","U","E","R"];
+const FINAL_CODE_WORD="AMOURETERNEL";
 const FINAL_CODE_DISPLAY="AMOUR ÉTERNEL";
-const REVEAL_ORDER=[4,5,0,9,1,7,2,11,6,3,10,8];
-const POSITION_TO_LEVEL=Array(LEVELS.length);
-REVEAL_ORDER.forEach((pos,level)=>{POSITION_TO_LEVEL[pos]=level});
 const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},childJoined:false,finalRiddlesSolved:false,profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
@@ -647,11 +644,11 @@ function computeMainAction(){
  if(!state.togetherUnlocked[idx])return{label:"Débloquer le défi",action:()=>openLevel(idx)};
  return{label:firstEver?"Commencer le défi":"Continuer l’aventure",action:()=>openLevel(idx)}
 }
-function letterFoundAt(p){const lvl=POSITION_TO_LEVEL[p];return state.completed[lvl]||(lvl===LEVELS.length-1&&state.finalRiddlesSolved)}
+function letterFoundAt(i){return state.completed[i]||(i===LEVELS.length-1&&state.finalRiddlesSolved)}
 function renderFinalCode(){
  const done=state.completed.filter(Boolean).length+(state.finalRiddlesSolved&&!state.completed[LEVELS.length-1]?1:0);
  document.getElementById("finalCodeCount").textContent="🔐 "+done+" élément"+(done>1?"s":"")+" découvert"+(done>1?"s":"")+" sur "+LEVELS.length+(done===LEVELS.length&&!state.completed[LEVELS.length-1]?" — ouvrez le dernier défi ensemble pour assembler le mot !":"");
- document.getElementById("finalCodeTiles").innerHTML=FINAL_CODE_LETTERS.map((ch,p)=>{const found=letterFoundAt(p);return `<div class="code-tile ${found?"found":""}">${found?esc(ch):"?"}</div>`}).join("")
+ document.getElementById("finalCodeTiles").innerHTML=FINAL_CODE_LETTERS.map((ch,i)=>{const found=letterFoundAt(i);return `<div class="code-tile ${found?"found":""}">${found?esc(ch):"?"}</div>`}).join("")
 }
 function renderMain(){
  const done=state.completed.filter(Boolean).length,idx=currentLevelIndex();
@@ -685,7 +682,7 @@ function completeLevel(i){
  const before=state.completed.filter(Boolean).length;
  state.completed[i]=true;save();renderMain();
  feedback(i===LEVELS.length-1?`🔓 Le coffre s’ouvre… « ${FINAL_CODE_DISPLAY} »\n\nRegardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.`:"Niveau validé.");
- const tile=document.querySelectorAll("#finalCodeTiles .code-tile")[REVEAL_ORDER[i]];
+ const tile=document.querySelectorAll("#finalCodeTiles .code-tile")[i];
  if(tile){tile.classList.add("new");setTimeout(()=>tile.classList.remove("new"),700)}
  const after=before+1,idx=REWARDS.findIndex((r,i2)=>r.need>before&&r.need<=after&&!state.rewards[i2]);
  if(idx>=0){
