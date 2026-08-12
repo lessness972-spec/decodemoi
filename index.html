@@ -556,14 +556,104 @@ function openCreateModal(){
  <div class="field"><label for="newParent">Nom affiché pour le parent partenaire</label><input id="newParent" maxlength="24" placeholder="Ex. Maman, Papa, Mes parents"></div>
  <button class="primary" id="confirmCreate">Créer</button>`)
 }
+const TUTORIAL_SEEN_KEY="decodeMoiTutorialSeen";
+const DEFAULT_TUTORIAL_BODY=`<p>Deux étapes avant de commencer : installer l’application, puis créer le coffret que le parent envoie au jeune par un lien.</p>
+ <h3 style="margin:18px 0 6px">📲 Installer l’application</h3>
+ <p class="muted" style="margin:0 0 10px"><strong>Android (Chrome) :</strong> une fenêtre « Installer le jeu » propose d’ajouter Décode-Moi à l’écran d’accueil. Si elle ne s’affiche pas seule, utilisez le bouton « Installer le jeu sur ce téléphone » sur l’écran d’accueil du jeu.</p>
+ <p class="muted"><strong>iPhone/iPad (Safari) :</strong> appuyez sur <strong>Partager</strong> (le carré avec une flèche vers le haut), puis sur <strong>Sur l’écran d’accueil</strong>.</p>
+ <h3 style="margin:18px 0 6px">🔑 Créer un coffret</h3>
+ <p class="muted" style="margin:0">1. Sur l’écran d’accueil du jeu, appuyez sur « Créer » dans la carte « Créer le coffret ».<br>
+ 2. Remplissez le nom de l’équipe, le prénom du jeune et le nom du parent.<br>
+ 3. Appuyez sur « Créer », puis sur « Envoyer le lien » pour transmettre le lien au jeune (SMS, WhatsApp…).<br>
+ 4. Le jeune ouvre le lien reçu : son coffret s’installe automatiquement, sans rien recopier.</p>`;
+let configCache={};
+function loadConfig(){
+ return fetch("/api/config").then(r=>r.ok?r.json():{}).then(c=>{configCache=c||{}}).catch(()=>{})
+}
+function devFetch(url,opts={}){
+ return fetch(url,{...opts,headers:{...(opts.headers||{}),"x-dev-code":"1397"}})
+}
+function tutorialHtml(){
+ const body=configCache.tutorial||DEFAULT_TUTORIAL_BODY;
+ return body+`<p class="muted" style="margin-top:14px">Vous retrouverez ce guide à tout moment depuis <strong>••• → Revoir le tutoriel</strong>.</p>
+ <button class="primary" id="tutorialGotIt" style="margin-top:6px">J’ai compris</button>`
+}
+function openTutorial(markSeen){
+ openModal("Comment ça marche","Guide de démarrage",tutorialHtml());
+ if(markSeen)localStorage.setItem(TUTORIAL_SEEN_KEY,"1");
+ const btn=document.getElementById("tutorialGotIt");
+ if(btn)btn.onclick=closeModal
+}
+function openReportIssueModal(){
+ openModal("Signaler un problème","Support technique",`
+ <p class="muted">Décrivez ce qui ne fonctionne pas, on s’en occupe.</p>
+ <div class="field"><label for="reportName">Votre prénom</label><input id="reportName" maxlength="40" value="${esc(profileName()||"")}"></div>
+ <div class="field"><label for="reportMsg">Le problème rencontré</label><textarea id="reportMsg" maxlength="1000" placeholder="Ex. Le chrono ne s’arrête pas, l’énigme du niveau 3 refuse la bonne réponse…"></textarea></div>
+ <button class="primary" id="sendReportBtn">Envoyer</button>`);
+ document.getElementById("sendReportBtn").onclick=async()=>{
+  const name=document.getElementById("reportName").value.trim();
+  const message=document.getElementById("reportMsg").value.trim();
+  if(!message){feedback("Décris le problème avant d’envoyer.","error");return}
+  try{
+   await fetch("/api/reports",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name,team:state.team||"",room:state.room||"",message,device:navigator.userAgent})});
+   feedback("Signalement envoyé, merci !","success");
+   setTimeout(closeModal,900)
+  }catch(e){feedback("Envoi impossible, réessaie plus tard.","error")}
+ }
+}
+function openDevReportsModal(){
+ openModal("Signalements","Mode développeur",`<p class="muted">Chargement…</p>`);
+ devFetch("/api/reports").then(r=>r.json()).then(data=>{
+  const reports=data.reports||[];
+  if(!reports.length){modalBody.innerHTML=`<p class="muted">Aucun signalement pour l’instant.</p>`;return}
+  modalBody.innerHTML=reports.map(r=>`<article class="card"><h3>${esc(r.name||"Anonyme")}${r.team?" · "+esc(r.team):""}</h3><p>${esc(r.message)}</p><p class="muted" style="font-size:12px">${esc(new Date(r.ts).toLocaleString("fr-FR"))}${r.room?" · Coffret "+esc(r.room):""}</p><button class="ghost" data-del-report="${esc(r.id)}">Supprimer</button></article>`).join("");
+  modalBody.querySelectorAll("[data-del-report]").forEach(btn=>btn.onclick=async()=>{
+   await devFetch("/api/reports",{method:"DELETE",headers:{"content-type":"application/json"},body:JSON.stringify({id:btn.dataset.delReport})});
+   openDevReportsModal()
+  })
+ }).catch(()=>{modalBody.innerHTML=`<p class="muted">Impossible de charger les signalements.</p>`})
+}
+function openTutorialEditor(){
+ loadConfig().then(()=>{
+  openModal("Modifier le tutoriel","Mode développeur",`
+  <p class="muted">Ce texte s’affiche pour tous les joueurs à la première ouverture de l’appli installée. Quelques balises HTML simples fonctionnent (&lt;strong&gt;, &lt;br&gt;, &lt;h3&gt;).</p>
+  <div class="field"><textarea id="tutorialEditArea" style="min-height:220px">${esc(configCache.tutorial||DEFAULT_TUTORIAL_BODY)}</textarea></div>
+  <div class="action-row"><button class="primary" id="saveTutorialBtn">Enregistrer</button><button class="ghost" id="resetTutorialBtn">Réinitialiser</button></div>`);
+  document.getElementById("saveTutorialBtn").onclick=async()=>{
+   const val=document.getElementById("tutorialEditArea").value;
+   try{
+    await devFetch("/api/config",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({tutorial:val})});
+    configCache.tutorial=val;
+    feedback("Tutoriel mis à jour pour tous les joueurs.","success")
+   }catch(e){feedback("Enregistrement impossible.","error")}
+  };
+  document.getElementById("resetTutorialBtn").onclick=async()=>{
+   try{
+    await devFetch("/api/config",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({tutorial:""})});
+    configCache.tutorial="";
+    document.getElementById("tutorialEditArea").value=DEFAULT_TUTORIAL_BODY;
+    feedback("Texte d’origine restauré.","success")
+   }catch(e){feedback("Réinitialisation impossible.","error")}
+  }
+ })
+}
 function devModeSectionHtml(){
  if(!isDevMode())return "";
- return `<p class="muted" style="margin:8px 0;font-size:.82rem">🛠️ Mode développeur actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.</p>`
+ return `<p class="muted" style="margin:8px 0;font-size:.82rem">🛠️ Mode développeur actif sur cet appareil : les bonnes réponses s’affichent sous chaque question, et le coffre déjà ouvert peut être rejoué à volonté.</p>
+ <div class="action-row" style="margin-top:8px"><button class="ghost" id="devReportsBtn">📬 Signalements</button><button class="ghost" id="devEditTutorialBtn">✏️ Modifier le tutoriel</button></div>`
+}
+function bindDevModeButtons(){
+ if(!isDevMode())return;
+ const rb=document.getElementById("devReportsBtn");if(rb)rb.onclick=openDevReportsModal;
+ const tb=document.getElementById("devEditTutorialBtn");if(tb)tb.onclick=openTutorialEditor;
 }
 function openGameManager(){
  if(!state.created){
-  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button>${isDevMode()?`<button class="secondary" id="devSeeGameBtn" style="margin-top:8px">🛠️ Voir le coffret (mode dev)</button>`:""}<hr>${devModeSectionHtml()}`);
+  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button>${isDevMode()?`<button class="secondary" id="devSeeGameBtn" style="margin-top:8px">🛠️ Voir le coffret (mode dev)</button>`:""}<div class="action-row" style="margin-top:8px"><button class="ghost" id="mgrTutorial">📘 Revoir le tutoriel</button><button class="ghost" id="mgrReportIssue">✉️ Signaler un problème</button></div><hr>${devModeSectionHtml()}`);
   document.getElementById("newGameBtn").onclick=openCreateModal;
+  document.getElementById("mgrTutorial").onclick=()=>openTutorial(true);
+  document.getElementById("mgrReportIssue").onclick=openReportIssueModal;
+  bindDevModeButtons();
   const devSeeGameBtn=document.getElementById("devSeeGameBtn");
   if(devSeeGameBtn)devSeeGameBtn.onclick=()=>{
    state=structuredClone(defaultState);state.created=true;state.team="Coffret de test";state.teen="Le jeune";state.parentName="Le parent";
@@ -579,6 +669,10 @@ function openGameManager(){
   <button class="secondary" id="mgrSendCoffret">Envoyer le coffret</button>
   <button class="secondary" id="mgrInviteRelay">Envoyer un relais</button>
   <button class="secondary" id="mgrShareApp">Partager le jeu</button>
+ </div>
+ <div class="action-row" style="margin-top:8px">
+  <button class="ghost" id="mgrTutorial">📘 Revoir le tutoriel</button>
+  <button class="ghost" id="mgrReportIssue">✉️ Signaler un problème</button>
  </div>
  <hr>
  <div class="notice"><strong>Profil utilisé sur cet appareil :</strong> ${esc(profileName())}</div>
@@ -615,6 +709,9 @@ function openGameManager(){
   save();closeModal();showMain();
   setTimeout(()=>openLevel(target),150)
  };
+ document.getElementById("mgrTutorial").onclick=()=>openTutorial(true);
+ document.getElementById("mgrReportIssue").onclick=openReportIssueModal;
+ bindDevModeButtons();
  document.getElementById("mgrSendCoffret").onclick=openInviteChild;
  document.getElementById("mgrInviteRelay").onclick=sendRelayNotice;
  document.getElementById("mgrShareApp").onclick=shareAppFile;
@@ -650,6 +747,7 @@ function openRewardsModal(){
   }
  }
  if(roomRaw&&roomRaw.trim())window.__openRoomAnswer=roomRaw.trim().toUpperCase();
+ window.__skipAutoTutorial=Boolean(joinRaw||roomRaw);
  if(joinRaw||roomRaw)history.replaceState({},"",location.pathname)
 })();
 if(state.created)showMain();
@@ -1093,6 +1191,11 @@ document.addEventListener("click",e=>{if(e.target?.id==="resetGame"&&confirm("Su
 
 if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("service-worker.js").catch(()=>{})})}
 const isStandalone=window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
+loadConfig().then(()=>{
+ if(isStandalone&&!window.__skipAutoTutorial&&!localStorage.getItem(TUTORIAL_SEEN_KEY)){
+  setTimeout(()=>openTutorial(true),500)
+ }
+});
 const INSTALL_DISMISS_KEY="decodeMoiInstallDismissed";
 let deferredInstallPrompt=null;
 function installDismissedRecently(){return Date.now()-(Number(localStorage.getItem(INSTALL_DISMISS_KEY))||0)<24*60*60*1000}
