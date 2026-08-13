@@ -558,14 +558,28 @@ function openCreateModal(){
 }
 const TUTORIAL_SEEN_KEY="decodeMoiTutorialSeen";
 const DEFAULT_TUTORIAL_BODY=`<p>Deux étapes avant de commencer : installer l’application, puis créer le coffret que le parent envoie au jeune par un lien.</p>
- <h3 style="margin:18px 0 6px">📲 Installer l’application</h3>
- <p class="muted" style="margin:0 0 10px"><strong>Android (Chrome) :</strong> une fenêtre « Installer le jeu » propose d’ajouter Décode-Moi à l’écran d’accueil. Si elle ne s’affiche pas seule, utilisez le bouton « Installer le jeu sur ce téléphone » sur l’écran d’accueil du jeu.</p>
- <p class="muted"><strong>iPhone/iPad (Safari) :</strong> appuyez sur <strong>Partager</strong> (le carré avec une flèche vers le haut), puis sur <strong>Sur l’écran d’accueil</strong>.</p>
- <h3 style="margin:18px 0 6px">🔑 Créer un coffret</h3>
- <p class="muted" style="margin:0">1. Sur l’écran d’accueil du jeu, appuyez sur « Créer » dans la carte « Créer le coffret ».<br>
- 2. Remplissez le nom de l’équipe, le prénom du jeune et le nom du parent.<br>
- 3. Appuyez sur « Créer », puis sur « Envoyer le lien » pour transmettre le lien au jeune (SMS, WhatsApp…).<br>
- 4. Le jeune ouvre le lien reçu : son coffret s’installe automatiquement, sans rien recopier.</p>`;
+ <h3 style="margin:18px 0 8px">📲 Installer l’application</h3>
+ <p style="margin:0 0 4px"><strong>Sur Android (Chrome) :</strong></p>
+ <ol style="margin:0 0 16px;padding-left:22px;color:var(--muted);line-height:1.5">
+  <li>Ouvrez <strong>decodemoi.dee-kreations.com</strong> dans Chrome.</li>
+  <li>Une fenêtre « Installer le jeu » propose d’ajouter Décode-Moi à l’écran d’accueil : appuyez sur <strong>« Installer »</strong>. Si elle ne s’affiche pas seule, utilisez le bouton « Installer le jeu sur ce téléphone » en bas de l’écran d’accueil du jeu.</li>
+  <li>L’icône de Décode-Moi apparaît sur l’écran d’accueil, prête à ouvrir directement, comme une vraie application.</li>
+ </ol>
+ <p style="margin:0 0 4px"><strong>Sur iPhone / iPad (Safari) :</strong></p>
+ <ol style="margin:0;padding-left:22px;color:var(--muted);line-height:1.5">
+  <li>Ouvrez <strong>decodemoi.dee-kreations.com</strong> dans Safari (pas un autre navigateur).</li>
+  <li>Appuyez sur <strong>Partager</strong> (le carré avec une flèche vers le haut, en bas de l’écran).</li>
+  <li>Faites défiler et appuyez sur <strong>« Sur l’écran d’accueil »</strong>, puis confirmez avec <strong>« Ajouter »</strong>.</li>
+  <li>L’icône apparaît sur l’écran d’accueil, prête à ouvrir comme une vraie application.</li>
+ </ol>
+ <h3 style="margin:20px 0 8px">🔑 Créer un coffret</h3>
+ <ol style="margin:0;padding-left:22px;color:var(--muted);line-height:1.5">
+  <li>Sur l’écran d’accueil du jeu, appuyez sur <strong>« Créer »</strong> dans la carte « Créer le coffret ».</li>
+  <li>Remplissez le nom de l’équipe, le prénom du jeune et le nom du parent.</li>
+  <li>Appuyez sur <strong>« Créer »</strong>.</li>
+  <li>Une fenêtre « Coffret créé » affiche un lien unique : appuyez sur <strong>« Envoyer le lien »</strong> pour le transmettre au jeune (SMS, WhatsApp…).</li>
+  <li>Le jeune ouvre le lien reçu sur son téléphone : son coffret s’installe automatiquement, sans rien recopier.</li>
+ </ol>`;
 let configCache={};
 function loadConfig(){
  return fetch("/api/config").then(r=>r.ok?r.json():{}).then(c=>{configCache=c||{}}).catch(()=>{})
@@ -575,7 +589,7 @@ function devFetch(url,opts={}){
 }
 function tutorialHtml(){
  const body=configCache.tutorial||DEFAULT_TUTORIAL_BODY;
- return body+`<p class="muted" style="margin-top:14px">Vous retrouverez ce guide à tout moment depuis <strong>••• → Revoir le tutoriel</strong>.</p>
+ return body+`<p class="muted" style="margin-top:14px">Vous retrouverez ce guide à tout moment depuis <strong>••• → Voir le tutoriel</strong>.</p>
  <button class="primary" id="tutorialGotIt" style="margin-top:6px">J’ai compris</button>`
 }
 function openTutorial(markSeen){
@@ -649,7 +663,7 @@ function bindDevModeButtons(){
 }
 function openGameManager(){
  if(!state.created){
-  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button>${isDevMode()?`<button class="secondary" id="devSeeGameBtn" style="margin-top:8px">🛠️ Voir le coffret (mode dev)</button>`:""}<div class="action-row" style="margin-top:8px"><button class="ghost" id="mgrTutorial">📘 Revoir le tutoriel</button><button class="ghost" id="mgrReportIssue">✉️ Signaler un problème</button></div><hr>${devModeSectionHtml()}`);
+  openModal("Options","Réglages",`<p class="muted">Aucune partie active sur cet appareil pour l’instant.</p><button class="primary" id="newGameBtn">Créer une partie</button>${isDevMode()?`<button class="secondary" id="devSeeGameBtn" style="margin-top:8px">🛠️ Voir le coffret (mode dev)</button>`:""}<div class="action-row" style="margin-top:8px"><button class="ghost" id="mgrTutorial">📘 Voir le tutoriel</button><button class="ghost" id="mgrReportIssue">✉️ Signaler un problème</button></div><hr>${devModeSectionHtml()}`);
   document.getElementById("newGameBtn").onclick=openCreateModal;
   document.getElementById("mgrTutorial").onclick=()=>openTutorial(true);
   document.getElementById("mgrReportIssue").onclick=openReportIssueModal;
@@ -671,7 +685,7 @@ function openGameManager(){
   <button class="secondary" id="mgrShareApp">Partager le jeu</button>
  </div>
  <div class="action-row" style="margin-top:8px">
-  <button class="ghost" id="mgrTutorial">📘 Revoir le tutoriel</button>
+  <button class="ghost" id="mgrTutorial">📘 Voir le tutoriel</button>
   <button class="ghost" id="mgrReportIssue">✉️ Signaler un problème</button>
  </div>
  <hr>
