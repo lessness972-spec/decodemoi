@@ -44,6 +44,21 @@ function mergeSharedAnswers(a, b) {
   });
   return out;
 }
+function mergeSprintAnswers(a, b) {
+  const out = { ...(a || {}) };
+  Object.keys(b || {}).forEach((k) => {
+    const existing = out[k] || {};
+    const incoming = b[k] || {};
+    const merged = { ...existing };
+    ["teen", "parent"].forEach((role) => {
+      const bv = incoming[role];
+      if (!bv) return;
+      merged[role] = merged[role] ? Math.min(merged[role], bv) : bv;
+    });
+    out[k] = merged;
+  });
+  return out;
+}
 function mergeRoom(existing, incoming) {
   const base = existing || {};
   return {
@@ -57,6 +72,9 @@ function mergeRoom(existing, incoming) {
     sharedAnswers: mergeSharedAnswers(base.sharedAnswers, incoming.sharedAnswers),
     timerStarts: mergeTimerStarts(base.timerStarts, incoming.timerStarts),
     togetherUnlocked: mergeBoolMap(base.togetherUnlocked, incoming.togetherUnlocked),
+    levelsMode: [12, 24, 36].includes(Number(incoming.levelsMode)) ? Number(incoming.levelsMode) : ([12, 24, 36].includes(Number(base.levelsMode)) ? Number(base.levelsMode) : 12),
+    bonusCompleted: mergeBoolArray(base.bonusCompleted, incoming.bonusCompleted),
+    sprintAnswers: mergeSprintAnswers(base.sprintAnswers, incoming.sprintAnswers),
     childJoined: Boolean(base.childJoined || incoming.childJoined),
     finalRiddlesSolved: Boolean(base.finalRiddlesSolved || incoming.finalRiddlesSolved),
     teenLastSeen: Math.max(Number(base.teenLastSeen) || 0, Number(incoming.teenLastSeen) || 0),
