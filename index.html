@@ -143,6 +143,17 @@ input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 
 .lock-overlay button{margin-top:26px}
 .muted{color:var(--muted);line-height:1.5}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.level-tiles{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.level-tile{
+  width:50px;height:50px;border-radius:14px;border:1px solid var(--card-border);background:var(--card);
+  color:var(--muted);font-family:var(--sans);font-weight:800;font-size:17px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;
+  transition:transform .14s ease,border-color .14s ease,background .14s ease,color .14s ease;
+}
+.level-tile:hover{transform:translateY(-2px);border-color:#43516d}
+.level-tile.done{background:rgba(66,203,211,.12);border-color:var(--cyan-bright);color:var(--cyan-bright)}
+.level-tile:disabled{opacity:.4;cursor:default;transform:none}
+.level-tile:focus-visible{outline:2px solid var(--cyan-bright);outline-offset:2px}
 .level{border:1px solid var(--card-border);border-radius:18px;padding:17px;background:var(--card);min-height:245px;display:flex;flex-direction:column;transition:transform .16s ease,border-color .16s ease}
 .level:not(.locked):hover{transform:translateY(-2px);border-color:#43516d}
 .level.locked{opacity:.46;filter:saturate(.55)}
@@ -241,7 +252,7 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
   <div class="kicker">Parcours en cours</div>
   <h2 style="margin:6px 0 0">Les défis à décoder</h2>
   <p class="muted" style="margin:6px 0 0">Chaque niveau validé débloque le suivant. Le parcours pourra accueillir de nouveaux défis.</p>
-  <div class="grid" id="levelGrid"></div>
+  <div class="level-tiles" id="levelGrid"></div>
 </section>
 
 <p class="footer">Les liens échangés ne contiennent aucun nom complet. La progression est sauvegardée sur chaque téléphone et synchronisée entre les deux.</p>
@@ -864,11 +875,17 @@ function levelStatus(i){
 }
 function renderLevels(){
  const grid=document.getElementById("levelGrid");grid.innerHTML="";
- LEVELS.forEach((l,i)=>{const st=levelStatus(i),d=document.createElement("article");d.className=`level ${l.mode} ${st.open?"":"locked"} ${state.completed[i]?"done":""}`;
- d.innerHTML=`<div class="num">${state.completed[i]?"✓":i+1}</div><div class="tag">${l.tag}</div><h3>${esc(l.title)}</h3><p>${esc(l.desc)}</p>${
-   st.open?`<button class="${state.completed[i]?"secondary":"primary"}" data-level="${i}">${state.completed[i]?"Revoir":(l.mode==="remote"&&state.activeRole==="parent")?"Répondre":"Jouer"}</button>`:`<div class="lock-note">🔒 ${esc(st.why)}</div>`
- }`;grid.appendChild(d)});
- document.querySelectorAll("[data-level]").forEach(b=>b.onclick=()=>openLevel(Number(b.dataset.level)))
+ LEVELS.forEach((l,i)=>{
+  const st=levelStatus(i),done=state.completed[i];
+  const btn=document.createElement("button");
+  btn.type="button";
+  btn.className=`level-tile${done?" done":""}`;
+  btn.textContent=done?"✓":String(i+1);
+  btn.disabled=!st.open;
+  btn.title=st.open?(done?"Revoir ce défi":"Découvrir ce défi"):st.why;
+  if(st.open)btn.onclick=()=>openLevel(i);
+  grid.appendChild(btn)
+ })
 }
 function finalRevealMessage(){return `Regardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.`}
 function completeLevel(i){
