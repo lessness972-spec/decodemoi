@@ -485,8 +485,7 @@ let currentOpenLevel=null;
 let currentOpenExtra=null;
 function reopenExtra(extra){
  if(extra.type==="bonus")openBonusChallenge(extra.index);
- else if(extra.type==="sprint")openSprintChallenge(extra.index);
- else if(extra.type==="group")openFragmentGroup(extra.index)
+ else if(extra.type==="sprint")openSprintChallenge(extra.index)
 }
 function fireLocalNotification(msg){
  try{
@@ -886,6 +885,10 @@ function otherStatusText(){
  const otherName=iAmParent?(state.teen||"le jeune"):(state.parentName||"le parent");
  const otherLastSeen=iAmParent?state.teenLastSeen:state.parentLastSeen;
  if(presenceLabel(otherLastSeen)==="en ligne")return `${otherName} • En ligne`;
+ if(state.levelsMode>12){
+  const schedule=scheduleFor(state.levelsMode);
+  return schedule.every(positionDone)?`${otherName} • Parcours terminé !`:`${otherName} • Parcours en cours`
+ }
  if(state.completed.every(Boolean))return `${otherName} • Parcours terminé !`;
  const idx=currentLevelIndex(),lvl=LEVELS[idx];
  if(lvl.mode==="remote"){
@@ -897,6 +900,13 @@ function otherStatusText(){
 }
 function computeMainAction(){
  if(!state.childJoined)return{label:"Envoyer le coffret",action:openInviteChild};
+ if(state.levelsMode>12){
+  const schedule=scheduleFor(state.levelsMode);
+  if(schedule.every(positionDone))return{label:"Revoir le parcours",action:positionOpenAction(schedule[schedule.length-1])};
+  const pos=schedule[currentScheduleIndex(schedule)];
+  const labels={1:"Jouer le défi",2:"Répondre au bonus (parent)",3:"Lancer le duel"};
+  return{label:labels[pos.series],action:positionOpenAction(pos)}
+ }
  const idx=currentLevelIndex();
  if(state.completed.every(Boolean))return{label:"Revoir le parcours",action:()=>openLevel(LEVELS.length-1)};
  const lvl=LEVELS[idx],iAmParent=state.activeRole==="parent",firstEver=state.completed.every(v=>!v);
@@ -934,13 +944,15 @@ function renderFinalCode(){
  document.getElementById("finalCodeTiles").innerHTML=FINAL_CODE_LETTERS.map((ch,i)=>{const found=letterFoundAt(i);return `<div class="code-tile ${found?"found":""}">${found?esc(ch):"?"}</div>`}).join("")
 }
 function renderMain(){
- const done=state.completed.filter(Boolean).length,idx=currentLevelIndex();
+ const schedule=scheduleFor(state.levelsMode);
+ const done=schedule.filter(positionDone).length,total=schedule.length,idxFlat=currentScheduleIndex(schedule);
+ const doneFragments=LEVELS.reduce((n,_,i)=>n+(fragmentComplete(i)?1:0),0);
  document.getElementById("teamTitle").textContent=state.team;
  document.getElementById("otherStatusLine").textContent=otherStatusText();
- document.getElementById("progressLabel").innerHTML=`Défi ${Math.min(idx+1,LEVELS.length)} sur ${LEVELS.length}<br><span class="muted" style="font-size:.82rem">${done} défi${done>1?"s":""} terminé${done>1?"s":""}</span>`;
- document.getElementById("progressBar").style.width=(done/LEVELS.length*100)+"%";
- document.getElementById("progressCard").onclick=()=>openLevel(idx);
- const unlockedRewards=REWARDS.filter(r=>done>=r.need).length;
+ document.getElementById("progressLabel").innerHTML=`Défi ${Math.min(idxFlat+1,total)} sur ${total}<br><span class="muted" style="font-size:.82rem">${done} défi${done>1?"s":""} terminé${done>1?"s":""}</span>`;
+ document.getElementById("progressBar").style.width=(done/total*100)+"%";
+ document.getElementById("progressCard").onclick=()=>computeMainAction().action();
+ const unlockedRewards=REWARDS.filter(r=>doneFragments>=r.need).length;
  document.getElementById("rewardsBadge").textContent="🏆 "+unlockedRewards+(unlockedRewards>1?" récompenses":" récompense");
  document.getElementById("rewardsBadge").onclick=openRewardsModal;
  renderFinalCode();
@@ -948,22 +960,18 @@ function renderMain(){
  mainBtn.textContent=mainAction.label;mainBtn.onclick=mainAction.action;
  renderLevels()
 }
-function levelStatus(i){
- if(isDevMode())return{open:true,why:""};
- if(i>0&&!state.completed[i-1])return{open:false,why:"Le niveau précédent doit être validé."};
- return{open:true,why:""}
-}
 function renderLevels(){
  const grid=document.getElementById("levelGrid");grid.innerHTML="";
- LEVELS.forEach((l,i)=>{
-  const st=levelStatus(i),done=fragmentComplete(i);
+ const schedule=scheduleFor(state.levelsMode);
+ schedule.forEach((pos,p)=>{
+  const st=positionStatus(p,schedule),done=positionDone(pos);
   const btn=document.createElement("button");
   btn.type="button";
   btn.className=`level-tile${done?" done":""}`;
-  btn.textContent=done?"✓":String(i+1);
+  btn.textContent=done?"✓":String(p+1);
   btn.disabled=!st.open;
   btn.title=st.open?(done?"Revoir ce défi":"Découvrir ce défi"):st.why;
-  if(st.open)btn.onclick=()=>state.levelsMode>12?openFragmentGroup(i):openLevel(i);
+  if(st.open)btn.onclick=positionOpenAction(pos);
   grid.appendChild(btn)
  })
 }
@@ -1055,7 +1063,7 @@ function openBonusChallenge(i){
   const val=document.getElementById("bonusAnswer").value;
   if(!matchesAnswer(m,val)){feedback("Ce n’est pas la bonne réponse, réessayez.","error");return}
   state.bonusCompleted[i]=true;save();feedback("Défi bonus validé !","success");renderMain();
-  setTimeout(()=>openFragmentGroup(i),700)
+  setTimeout(()=>openBonusChallenge(i),700)
  }
 }
 function openSprintChallenge(i){
@@ -1088,14 +1096,33 @@ function openSprintChallenge(i){
  const refreshBtn=document.getElementById("refreshSprint");
  if(refreshBtn)refreshBtn.onclick=async()=>{refreshBtn.disabled=true;await pushToServer();if(currentOpenExtra&&currentOpenExtra.type==="sprint"&&currentOpenExtra.index===i)openSprintChallenge(i)}
 }
-function openFragmentGroup(i){
- currentOpenLevel=null;currentOpenExtra={type:"group",index:i};
- const parts=[{label:"Défi du jeune",done:state.completed[i],action:()=>openLevel(i)}];
- if(state.levelsMode>=24)parts.push({label:"Défi bonus (parent)",done:state.bonusCompleted[i],action:()=>openBonusChallenge(i)});
- if(state.levelsMode>=36)parts.push({label:"Duel rapide",done:sprintWinner(i)!==null,action:()=>openSprintChallenge(i)});
- const rows=parts.map((p,idx)=>`<button type="button" class="secondary" style="width:100%;text-align:left;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center" data-part="${idx}"><span>${esc(p.label)}</span><span>${p.done?"✓":"○"}</span></button>`).join("");
- openModal(`Fragment ${i+1}`,"Étapes à valider",`<p class="muted">Ce fragment se débloque une fois toutes les étapes ci-dessous validées.</p>${rows}`);
- parts.forEach((p,idx)=>{document.querySelector(`[data-part="${idx}"]`).onclick=p.action})
+function scheduleFor(mode){
+ const sched=[];
+ for(let k=0;k<FRAGMENT_COUNT;k++){
+  sched.push({series:1,idx:k});
+  if(mode>=24)sched.push({series:2,idx:k});
+  if(mode>=36)sched.push({series:3,idx:k});
+ }
+ return sched
+}
+function positionDone(pos){
+ if(pos.series===1)return state.completed[pos.idx];
+ if(pos.series===2)return state.bonusCompleted[pos.idx];
+ return sprintWinner(pos.idx)!==null
+}
+function positionOpenAction(pos){
+ if(pos.series===1)return ()=>openLevel(pos.idx);
+ if(pos.series===2)return ()=>openBonusChallenge(pos.idx);
+ return ()=>openSprintChallenge(pos.idx)
+}
+function positionStatus(p,schedule){
+ if(isDevMode())return{open:true,why:""};
+ if(p>0&&!positionDone(schedule[p-1]))return{open:false,why:"L’étape précédente doit être validée."};
+ return{open:true,why:""}
+}
+function currentScheduleIndex(schedule){
+ for(let p=0;p<schedule.length;p++)if(!positionDone(schedule[p]))return p;
+ return schedule.length-1
 }
 function openLevel(i){
  currentOpenLevel=i;currentOpenExtra=null;
