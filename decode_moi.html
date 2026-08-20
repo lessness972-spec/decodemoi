@@ -778,7 +778,7 @@ function openGameManager(){
  </details>
  <details><summary class="muted" style="cursor:pointer">Outils de test (vérifier un défi sans tout rejouer)</summary>
   <p class="muted" style="margin:8px 0">Marque les défis précédents comme faits et ouvre directement celui choisi, pour le tester seul. Ça modifie la progression sur cet appareil.</p>
-  <div class="field"><label for="testLevelInput">Aller directement au défi n°</label><input id="testLevelInput" type="number" min="1" max="${LEVELS.length}" value="1"></div>
+  <div class="field"><label for="testLevelInput">Aller directement au défi n°</label><input id="testLevelInput" type="number" min="1" max="${scheduleFor(state.levelsMode).length}" value="1"></div>
   <button class="secondary" id="testJumpBtn">Aller à ce défi</button>
  </details>
  ${devModeSectionHtml()}
@@ -789,14 +789,23 @@ function openGameManager(){
  document.getElementById("newGameBtn").onclick=openCreateModal;
  document.getElementById("deleteCurrentBtn").onclick=()=>{if(confirm("Supprimer cette partie sur cet appareil ?"))deleteGame(state.room)};
  document.getElementById("testJumpBtn").onclick=()=>{
-  const n=Math.max(1,Math.min(LEVELS.length,Number(document.getElementById("testLevelInput").value)||1));
+  const schedule=scheduleFor(state.levelsMode);
+  const n=Math.max(1,Math.min(schedule.length,Number(document.getElementById("testLevelInput").value)||1));
   const target=n-1;
-  for(let k=0;k<LEVELS.length;k++)state.completed[k]=k<target;
+  state.completed=state.completed.map(()=>false);
+  state.bonusCompleted=state.bonusCompleted.map(()=>false);
+  state.sprintAnswers={};
+  schedule.forEach((pos,p)=>{
+   if(p>=target)return;
+   if(pos.series===1)state.completed[pos.idx]=true;
+   else if(pos.series===2)state.bonusCompleted[pos.idx]=true;
+   else state.sprintAnswers[pos.idx]={teen:1,parent:2}
+  });
   state.finalRiddlesSolved=false;
-  if(state.togetherUnlocked)delete state.togetherUnlocked[target];
-  if(state.timerStarts)delete state.timerStarts[target];
+  state.togetherUnlocked={};
+  state.timerStarts={};
   save();closeModal();showMain();
-  setTimeout(()=>openLevel(target),150)
+  setTimeout(()=>positionOpenAction(schedule[target])(),150)
  };
  document.getElementById("mgrTutorial").onclick=()=>openTutorial(true);
  document.getElementById("mgrReportIssue").onclick=openReportIssueModal;
