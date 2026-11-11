@@ -1,7 +1,7 @@
 {
   "name": "Décode-Moi — by Dee Kréations",
   "short_name": "Décode-Moi",
-  "description": "Les énigmes de la Bible en famille : 12 défis à réaliser en duo, à distance et ensemble. Un produit Dee Kréations.",
+  "description": "Les énigmes de la Bible en famille : 12 défis à jouer seul, à deux ou à plusieurs. Un produit Dee Kréations.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -1,4 +1,4 @@
-const CACHE_NAME = "decodemoi-v3";
+const CACHE_NAME = "decodemoi-v4";
 const SHELL_ASSETS = ["index.html", "manifest.json", "assets/icone-decodemoi.png", "assets/dee-monogram.png"];
 
 self.addEventListener("install", (event) => {

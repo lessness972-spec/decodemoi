@@ -215,9 +215,9 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
 <section class="hero" id="home">
   <div class="kicker">Le jeu commence ici</div>
   <h1 class="home-title">Décode-Moi</h1>
-  <p class="muted" style="margin:-6px 0 20px;max-width:56ch"><strong>Les énigmes de la Bible en famille.</strong> Un parcours de 12 défis à réaliser en duo : une énigme à distance alterne avec une activité sans téléphone à faire ensemble. Le parent crée le coffret et l’envoie par un lien ; les énigmes à distance se répondent aussi par lien, sans rien recopier. <a href="#" id="seeRulesLink" style="color:var(--cyan-bright)">Voir les règles en détail</a>.</p>
+  <p class="muted" style="margin:-6px 0 20px;max-width:56ch"><strong>Les énigmes de la Bible en famille.</strong> Un parcours de 12 défis à jouer seul, à deux ou à plusieurs : des énigmes alternent avec des activités sans téléphone. Celui qui crée la partie envoie un lien aux autres joueurs ; chacun répond sur son propre téléphone, sans rien recopier. <a href="#" id="seeRulesLink" style="color:var(--cyan-bright)">Voir les règles en détail</a>.</p>
   <div class="mode-grid">
-    <article class="mode-card"><h3>Créer le coffret</h3><p>Le parent remplit les prénoms, puis envoie le coffret par un lien.</p><button class="primary" id="createBtn">Créer</button></article>
+    <article class="mode-card"><h3>Créer une partie</h3><p>Seul, à deux ou à plusieurs : choisis, puis envoie le lien aux autres joueurs.</p><button class="primary" id="createBtn">Créer</button></article>
     <article class="mode-card"><h3>J’ai reçu un lien</h3><p>Ouvre-le simplement : le coffret ou l’énigme s’affichent tout seuls.</p><button class="secondary" id="joinBtn">Entrer un code à la main</button></article>
   </div>
   <div class="action-row" style="margin-top:14px">
@@ -255,7 +255,7 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
   <div class="level-tiles" id="levelGrid"></div>
 </section>
 
-<p class="footer">Décode-Moi est un produit Dee Kréations. Les liens échangés ne contiennent aucun nom complet. La progression est sauvegardée sur chaque téléphone et synchronisée entre les deux.</p>
+<p class="footer">Décode-Moi est un produit Dee Kréations. Les liens échangés ne contiennent aucun nom complet. La progression est sauvegardée sur chaque téléphone et synchronisée entre les téléphones des joueurs. <a href="#" id="mentionsLegalesLink" style="color:inherit;text-decoration:underline">Mentions légales et confidentialité</a></p>
 <footer class="dee-footer">
   <img src="assets/dee-monogram.png" alt="Dee Kréations">
   <div><strong>Dee Kréations</strong><span>L’élégance de l’idée, la force de la création.</span></div>
@@ -314,7 +314,7 @@ const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
 const FINAL_CODE_LETTERS=["M","U","E","O","D","T","R","I","A","S","U","E"];
 const FINAL_CODE_WORD="DIEUESTAMOUR";
 const FINAL_CODE_DISPLAY="DIEU EST AMOUR";
-const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},childJoined:false,finalRiddlesSolved:false,levelsMode:12,niveau:"junior",bonusCompleted:Array(FRAGMENT_COUNT).fill(false),sprintAnswers:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+const defaultState={created:false,playMode:"duo",players:{},groupSolved:{},myId:"",team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},childJoined:false,finalRiddlesSolved:false,levelsMode:12,niveau:"junior",bonusCompleted:Array(FRAGMENT_COUNT).fill(false),sprintAnswers:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
  const result=Array(LEVELS.length).fill(false);
@@ -325,6 +325,90 @@ function normalizeBoolArrayN(values,n){
  const result=Array(n).fill(false);
  if(Array.isArray(values)) values.slice(0,n).forEach((v,i)=>result[i]=Boolean(v));
  return result
+}
+function sanitizePlayers(p){
+ const out={};
+ if(p&&typeof p==="object")Object.keys(p).slice(0,30).forEach(id=>{if(!/^[A-Za-z0-9]{4,16}$/.test(id))return;const v=p[id]||{};out[id]={name:String(v.name||"").slice(0,24),joined:Number(v.joined)||0,lastSeen:Number(v.lastSeen)||0}});
+ return out
+}
+function sanitizeGroupSolved(g){
+ const out={};
+ if(g&&typeof g==="object")Object.keys(g).forEach(k=>{const v=g[k];if(v&&typeof v==="object"){out[k]={};Object.keys(v).forEach(id=>{if(v[id])out[k][id]=true})}});
+ return out
+}
+// --- Modes de jeu : solo (un téléphone), duo (parent + jeune), groupe (organisateur + joueurs) ---
+function isSolo(){return state.playMode==="solo"}
+function isGroup(){return state.playMode==="groupe"}
+function newMemberId(){const c="abcdefghjkmnpqrstuvwxyz23456789";let s="";for(let i=0;i<10;i++)s+=c[Math.floor(Math.random()*c.length)];return s}
+function groupPlayers(){return Object.entries(state.players||{}).filter(([,p])=>p&&p.name).sort((a,b)=>(a[1].joined||0)-(b[1].joined||0))}
+function groupMembers(){return ["parent",...groupPlayers().map(([id])=>id)]}
+function myKey(){if(state.activeRole==="parent")return "parent";return isGroup()?state.myId:"teen"}
+function myGroupName(){return state.players&&state.players[state.myId]&&state.players[state.myId].name}
+function memberName(key){
+ if(key==="parent")return state.parentName||(isGroup()?"L’organisateur":"Le parent");
+ if(key==="teen")return state.teen||"Le jeune";
+ return (state.players&&state.players[key]&&state.players[key].name)||"Un joueur"
+}
+function groupRemoteDone(i){const ps=groupPlayers();if(!ps.length)return false;const s=state.groupSolved[i]||{};return ps.every(([id])=>s[id])}
+function groupAutoComplete(){
+ if(!isGroup())return false;
+ let changed=false;
+ LEVELS.forEach((l,i)=>{if(l.mode==="remote"&&!state.completed[i]&&state.parentAnswers[i]&&groupRemoteDone(i)){state.completed[i]=true;changed=true}});
+ return changed
+}
+function splitCode(full,n){const out=[];let pos=0;for(let k=0;k<n;k++){const size=Math.floor(full.length/n)+(k<full.length%n?1:0);out.push(full.slice(pos,pos+size));pos+=size}return out}
+function groupStatusHtml(i){
+ const s=state.groupSolved[i]||{},done=state.completed[i];
+ const rows=[`<li>${state.parentAnswers[i]?"✅":"⏳"} ${esc(memberName("parent"))} <span class="muted">(organisateur)</span></li>`].concat(groupPlayers().map(([id,p])=>`<li>${s[id]?"✅":"⏳"} ${esc(p.name)}</li>`));
+ return `<div class="${done?"success":"notice"}" id="relayStatus"><strong>${done?"Défi validé par tout le groupe ✓":"Qui a trouvé ?"}</strong><ul style="margin:8px 0 0;padding-left:0;list-style:none">${rows.join("")}</ul>${done?"":`<p class="muted" style="margin:8px 0 0">Le défi se valide tout seul quand tout le monde a trouvé. Cet écran se met à jour automatiquement.</p>`}</div>`
+}
+function groupStatusLine(){
+ const ps=groupPlayers();
+ if(!ps.length)return "En attente des joueurs : envoie-leur le lien d’invitation";
+ const online=[["parent",{lastSeen:state.parentLastSeen}],...ps].filter(([k,p])=>k!==myKey()&&presenceLabel(p.lastSeen)==="en ligne").length;
+ const base=`${ps.length+1} participants${online?` • ${online} en ligne`:""}`;
+ if(state.levelsMode>12||state.completed.every(Boolean))return base;
+ const idx=currentLevelIndex(),lvl=LEVELS[idx];
+ if(lvl.mode==="remote"){
+  const s=state.groupSolved[idx]||{},waiting=[...(state.parentAnswers[idx]?[]:[myKey()==="parent"?"toi":memberName("parent")]),...ps.filter(([id])=>!s[id]).map(([id,p])=>id===state.myId?"toi":p.name)];
+  return waiting.length?`${base} • En attente de : ${waiting.join(", ")}`:base
+ }
+ return state.togetherUnlocked[idx]?`${base} • Prêts pour l’activité`:`${base} • Retrouvez-vous pour assembler le code`
+}
+function askGroupName(){
+ openModal("Bienvenue dans la partie",state.team||"À plusieurs",`<p>Tu rejoins <strong>${esc(state.team)}</strong>, organisée par ${esc(memberName("parent"))}.</p><div class="field"><label for="groupMyName">Ton prénom ou pseudo</label><input id="groupMyName" maxlength="20"></div><button class="primary" id="groupMyNameOk">Rejoindre la partie</button>`);
+ document.getElementById("groupMyNameOk").onclick=()=>{
+  const name=document.getElementById("groupMyName").value.trim();
+  if(!name){feedback("Écris ton prénom ou pseudo.","error");return}
+  if(!state.myId)state.myId=newMemberId();
+  state.players[state.myId]={name,joined:Date.now(),lastSeen:Date.now()};
+  save();closeModal();renderMain()
+ }
+}
+function sharedPromptFor(i){
+ if(isSolo())return "";
+ const sa=state.sharedAnswers[i]||{},me=myKey();
+ if(!isGroup()){const other=me==="parent"?"teen":"parent";return sharedPromptBlock(i,sa[me],sa[other],memberName(other))}
+ const sp=SHARED_PROMPT_BY_LEVEL[i];
+ if(!sp)return "";
+ if(!sa[me])return sharedPromptBlock(i,"","","");
+ const others=groupMembers().filter(k=>k!==me&&sa[k]).map(k=>`<p><strong>${esc(memberName(k))} :</strong> ${esc(sa[k])}</p>`).join("");
+ return `<hr><div class="notice"><strong>💬 ${esc(sp.category)}</strong><p>${esc(sp.question)}</p><p><strong>Toi :</strong> ${esc(sa[me])}</p>${others||'<p class="muted">Les réponses des autres apparaîtront ici.</p>'}</div>`
+}
+function hintWhoOptions(){
+ if(isSolo())return `<option>${esc(state.teen||"Moi")}</option>`;
+ if(isGroup())return groupMembers().map(k=>`<option>${esc(memberName(k))}</option>`).join("");
+ return "<option>Le jeune</option><option>Le parent</option>"
+}
+function gameCardLabel(g){
+ if(g.playMode==="solo")return esc(g.teen||"Joueur")+" (solo)";
+ if(g.playMode==="groupe"){const n=Object.values(g.players||{}).filter(p=>p&&p.name).length;return esc(g.parentName||"Organisateur")+" + "+n+" joueur"+(n>1?"s":"")}
+ return esc(g.teen||"Jeune")+" + "+esc(g.parentName||"Parent")
+}
+function lengthHint(mode,len){
+ if(String(len)==="24")return mode==="solo"?"Un défi bonus s’ajoute à chaque étape.":mode==="groupe"?"Un défi bonus réservé à l’organisateur s’ajoute à chaque étape.":LENGTH_HINTS[24];
+ if(String(len)==="36")return mode==="groupe"?"En plus du bonus, un duel de rapidité : le premier qui trouve gagne.":LENGTH_HINTS[36];
+ return LENGTH_HINTS[12]
 }
 function sanitizeGame(x={}){
  const game={...structuredClone(defaultState),...x};
@@ -343,6 +427,10 @@ function sanitizeGame(x={}){
  game.bonusCompleted=normalizeBoolArrayN(x.bonusCompleted,FRAGMENT_COUNT);
  game.sprintAnswers={...(x.sprintAnswers||{})};
  game.activeRole=x.activeRole==="parent"?"parent":"teen";
+ game.playMode=["solo","duo","groupe"].includes(x.playMode)?x.playMode:"duo";
+ game.players=sanitizePlayers(x.players);
+ game.groupSolved=sanitizeGroupSolved(x.groupSolved);
+ game.myId=typeof x.myId==="string"?x.myId.slice(0,16):"";
  game.profileData={parent:{...emptyProfile(),...(x.profileData?.parent||{})},teen:{...emptyProfile(),...(x.profileData?.teen||{})}};
  if(!x.profileData){
   game.profileData.teen.localAnswers={...(x.localAnswers||{})};
@@ -370,6 +458,7 @@ let store=loadStore();
 let state=store.activeRoom&&store.games[store.activeRoom]?sanitizeGame(store.games[store.activeRoom]):structuredClone(defaultState);
 function save(){
  if(!state.room)return;
+ groupAutoComplete();
  state=sanitizeGame(state);store.games[state.room]=state;store.activeRoom=state.room;
  localStorage.setItem(STORE_KEY,JSON.stringify(store));
  pushToServer()
@@ -400,7 +489,8 @@ function decodeInvite(code){try{let b=code.replace(/-/g,"+").replace(/_/g,"/");w
 function appLink(params){return location.origin+location.pathname+"?"+params}
 
 function roomApiUrl(room){return location.origin+"/api/room/"+encodeURIComponent(room)}
-function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,sharedAnswers:state.sharedAnswers,timerStarts:state.timerStarts,togetherUnlocked:state.togetherUnlocked,childJoined:state.childJoined,finalRiddlesSolved:state.finalRiddlesSolved,levelsMode:state.levelsMode,bonusCompleted:state.bonusCompleted,sprintAnswers:state.sprintAnswers,teenLastSeen:Date.now(),parentLastSeen:state.parentLastSeen||0}}
+function syncPayload(){return {team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,completed:state.completed,parentAnswers:state.parentAnswers,rewards:state.rewards,sharedAnswers:state.sharedAnswers,timerStarts:state.timerStarts,togetherUnlocked:state.togetherUnlocked,childJoined:state.childJoined,finalRiddlesSolved:state.finalRiddlesSolved,levelsMode:state.levelsMode,bonusCompleted:state.bonusCompleted,sprintAnswers:state.sprintAnswers,teenLastSeen:isGroup()?(state.teenLastSeen||0):Date.now(),parentLastSeen:isGroup()&&state.activeRole==="parent"?Date.now():(state.parentLastSeen||0),playMode:state.playMode,players:syncPlayers(),groupSolved:state.groupSolved}}
+function syncPlayers(){const p=structuredClone(state.players||{});if(isGroup()&&state.activeRole!=="parent"&&p[state.myId]&&p[state.myId].name)p[state.myId].lastSeen=Date.now();return p}
 function presenceLabel(ts){
  if(!ts)return "jamais connecté";
  const diff=Date.now()-ts;
@@ -437,7 +527,7 @@ function mergeServerState(server){
  let changed=false,presenceChanged=false,turnMsg=null;
  const dirty=new Set();
  if(Array.isArray(server.completed))server.completed.forEach((v,i)=>{if(v&&!state.completed[i]){state.completed[i]=true;changed=true;dirty.add(i);
-  if(state.activeRole==="parent"&&LEVELS[i+1]&&LEVELS[i+1].mode==="remote"&&!state.parentAnswers[i+1])turnMsg=`${state.teen||"Le jeune"} a joué. À toi maintenant.`
+  if(state.activeRole==="parent"&&LEVELS[i+1]&&LEVELS[i+1].mode==="remote"&&!state.parentAnswers[i+1])turnMsg=isGroup()?"Tout le groupe a terminé ce défi. À toi maintenant.":`${state.teen||"Le jeune"} a joué. À toi maintenant.`
  }});
  if(server.parentAnswers)Object.keys(server.parentAnswers).forEach(k=>{if(server.parentAnswers[k]&&!state.parentAnswers[k]){state.parentAnswers[k]=true;changed=true;dirty.add(Number(k));
   if(state.activeRole!=="parent"&&!state.completed[k])turnMsg=`${state.parentName||"Le parent"} a répondu. Ton prochain défi t’attend.`
@@ -445,7 +535,8 @@ function mergeServerState(server){
  if(server.rewards)Object.keys(server.rewards).forEach(k=>{if(!state.rewards[k]&&server.rewards[k]){state.rewards[k]=server.rewards[k];changed=true}});
  if(server.sharedAnswers)Object.keys(server.sharedAnswers).forEach(k=>{
   const s=server.sharedAnswers[k]||{},cur=state.sharedAnswers[k]||{};
-  if((s.teen&&!cur.teen)||(s.parent&&!cur.parent)){state.sharedAnswers[k]={teen:s.teen||cur.teen||"",parent:s.parent||cur.parent||""};changed=true;dirty.add(Number(k))}
+  const missing=Object.keys(s).filter(r=>s[r]&&!cur[r]);
+  if(missing.length){const merged={...cur};missing.forEach(r=>merged[r]=s[r]);state.sharedAnswers[k]=merged;changed=true;dirty.add(Number(k))}
  });
  if(server.timerStarts)Object.keys(server.timerStarts).forEach(k=>{
   const sv=server.timerStarts[k];
@@ -455,9 +546,18 @@ function mergeServerState(server){
  if(Array.isArray(server.bonusCompleted))server.bonusCompleted.forEach((v,i)=>{if(v&&!state.bonusCompleted[i]){state.bonusCompleted[i]=true;changed=true;dirty.add(i)}});
  if(server.sprintAnswers)Object.keys(server.sprintAnswers).forEach(k=>{
   const sv=server.sprintAnswers[k]||{},cur=state.sprintAnswers[k]||{};let touched=false;
-  ["teen","parent"].forEach(role=>{if(sv[role]&&(!cur[role]||sv[role]<cur[role])){cur[role]=sv[role];touched=true}});
+  Object.keys(sv).forEach(role=>{if(sv[role]&&(!cur[role]||sv[role]<cur[role])){cur[role]=sv[role];touched=true}});
   if(touched){state.sprintAnswers[k]=cur;changed=true;dirty.add(Number(k))}
  });
+ if(server.players&&typeof server.players==="object"){
+  const sp=sanitizePlayers(server.players);state.players=state.players||{};
+  Object.keys(sp).forEach(id=>{const sv=sp[id],cur=state.players[id];
+   if(!cur||(sv.name&&!cur.name)){state.players[id]={...(cur||{}),...sv,name:(cur&&cur.name)||sv.name};changed=true}
+   else if(sv.lastSeen>(cur.lastSeen||0)){cur.lastSeen=sv.lastSeen;presenceChanged=true}
+  })
+ }
+ if(server.groupSolved&&typeof server.groupSolved==="object")Object.keys(server.groupSolved).forEach(k=>{const sv=server.groupSolved[k]||{};state.groupSolved[k]=state.groupSolved[k]||{};Object.keys(sv).forEach(id=>{if(sv[id]&&!state.groupSolved[k][id]){state.groupSolved[k][id]=true;changed=true;dirty.add(Number(k))}})});
+ if(groupAutoComplete()){changed=true;if(currentOpenLevel!==null)dirty.add(currentOpenLevel);if(!turnMsg)turnMsg="Tout le monde a trouvé : le défi est validé !"}
  if(server.childJoined&&!state.childJoined){state.childJoined=true;changed=true}
  if(server.finalRiddlesSolved&&!state.finalRiddlesSolved){state.finalRiddlesSolved=true;changed=true;dirty.add(LEVELS.length-1)}
  if(typeof server.parentLastSeen==="number"&&server.parentLastSeen>state.parentLastSeen){state.parentLastSeen=server.parentLastSeen;presenceChanged=true}
@@ -475,7 +575,7 @@ function mergeServerState(server){
  return changed
 }
 async function pushToServer(){
- if(!state.room)return;
+ if(!state.room||isSolo())return;
  try{
   const res=await fetch(roomApiUrl(state.room),{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify(syncPayload())});
   if(res.ok)mergeServerState(await res.json())
@@ -542,33 +642,64 @@ function showHome(){home.classList.remove("hidden");mainGame.classList.add("hidd
 function showMain(){home.classList.add("hidden");mainGame.classList.remove("hidden");parentGame.classList.add("hidden");renderMain()}
 function showParent(){home.classList.add("hidden");mainGame.classList.add("hidden");parentGame.classList.remove("hidden")}
 function openCreateModal(){
- openModal("Créer le coffret","Nouveau parcours",`<div class="field"><label for="newTeam">Nom de l’équipe</label><input id="newTeam" maxlength="28" placeholder="Ex. Team Sans Indice"></div>
- <div class="field"><label for="newTeen">Prénom ou pseudo du joueur</label><input id="newTeen" maxlength="20"></div>
- <div class="field"><label for="newParent">Nom affiché pour le parent partenaire</label><input id="newParent" maxlength="24" placeholder="Ex. Maman, Papa, Mes parents"></div>
+ openModal("Créer une partie","Nouveau parcours",`<div class="field"><label>Comment allez-vous jouer ?</label>
+  <div class="action-row" id="playModePicker" data-selected="duo">
+   <button type="button" class="secondary" data-play="solo">Seul</button>
+   <button type="button" class="primary" data-play="duo">À deux</button>
+   <button type="button" class="secondary" data-play="groupe">À plusieurs</button>
+  </div>
+  <p class="muted" id="playModeHint" style="margin-top:8px;font-size:13px"></p>
+ </div>
+ <div class="field"><label for="newTeam" id="newTeamLabel">Nom de l’équipe</label><input id="newTeam" maxlength="28" placeholder="Ex. Team Sans Indice"></div>
+ <div class="field" id="newTeenField"><label for="newTeen" id="newTeenLabel">Prénom ou pseudo du joueur</label><input id="newTeen" maxlength="20"></div>
+ <div class="field" id="newParentField"><label for="newParent" id="newParentLabel">Nom affiché pour le parent partenaire</label><input id="newParent" maxlength="24" placeholder="Ex. Maman, Papa, Mes parents"></div>
  <div class="field"><label>Longueur du parcours</label>
   <div class="action-row" id="lengthPicker" data-selected="12">
    <button type="button" class="primary" data-length="12">12 défis</button>
    <button type="button" class="secondary" data-length="24">24 défis</button>
    <button type="button" class="secondary" data-length="36">36 défis</button>
   </div>
-  <p class="muted" id="lengthHint" style="margin-top:8px;font-size:13px">${esc(LENGTH_HINTS[12])}</p>
+  <p class="muted" id="lengthHint" style="margin-top:8px;font-size:13px"></p>
  </div>
- <div class="field"><label>Niveau des énigmes du jeune</label>
+ <div class="field"><label id="niveauLabel">Niveau des énigmes du jeune</label>
   <div class="action-row" id="niveauPicker" data-selected="junior">
    ${Object.entries(NIVEAUX).map(([k,v])=>`<button type="button" class="${k==="junior"?"primary":"secondary"}" data-niveau="${k}">${v}</button>`).join("")}
   </div>
-  <p class="muted" style="margin-top:8px;font-size:13px">Les énigmes du parent restent de niveau adulte.</p>
+  <p class="muted" id="niveauHint" style="margin-top:8px;font-size:13px"></p>
  </div>
  <button class="primary" id="confirmCreate">Créer</button>`);
+ const TEXTS={
+  solo:{hint:"Une seule personne, sur un seul téléphone. Pas de relais à attendre ; les activités se font seul(e) ou avec qui tu veux, sans code à assembler.",team:"Nom de la partie (facultatif)",teen:"Ton prénom ou pseudo",niveau:"Niveau des énigmes",nh:""},
+  duo:{hint:"Deux joueurs, chacun sur son téléphone : un parent et un jeune.",team:"Nom de l’équipe",teen:"Prénom ou pseudo du joueur",parent:"Nom affiché pour le parent partenaire",niveau:"Niveau des énigmes du jeune",nh:"Les énigmes du parent restent de niveau adulte."},
+  groupe:{hint:"Trois personnes ou plus, chacune sur son téléphone. Tu es l’organisateur : tu enverras un lien aux joueurs, et chacun donnera son prénom en l’ouvrant. Un défi se valide quand tout le monde a trouvé.",team:"Nom de l’équipe",parent:"Ton nom affiché (organisateur)",niveau:"Niveau des énigmes des joueurs",nh:"Les énigmes de l’organisateur restent de niveau adulte."}
+ };
+ const refresh=()=>{
+  const mode=document.getElementById("playModePicker").dataset.selected,lp=document.getElementById("lengthPicker"),L=TEXTS[mode];
+  if(mode==="solo"&&lp.dataset.selected==="36")lp.dataset.selected="24";
+  lp.querySelectorAll("[data-length]").forEach(b=>{b.className=b.dataset.length===lp.dataset.selected?"primary":"secondary";if(mode==="solo"&&b.dataset.length==="36")b.classList.add("hidden")});
+  document.getElementById("playModeHint").textContent=L.hint;
+  document.getElementById("newTeamLabel").textContent=L.team;
+  document.getElementById("newTeenField").classList.toggle("hidden",mode==="groupe");
+  document.getElementById("newParentField").classList.toggle("hidden",mode==="solo");
+  if(L.teen)document.getElementById("newTeenLabel").textContent=L.teen;
+  if(L.parent)document.getElementById("newParentLabel").textContent=L.parent;
+  document.getElementById("newParent").placeholder=mode==="groupe"?"Ex. Maman, Tonton Paul":"Ex. Maman, Papa, Mes parents";
+  document.getElementById("niveauLabel").textContent=L.niveau;
+  document.getElementById("niveauHint").textContent=L.nh;
+  document.getElementById("lengthHint").textContent=lengthHint(mode,lp.dataset.selected)
+ };
+ document.querySelectorAll("#playModePicker [data-play]").forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll("#playModePicker [data-play]").forEach(b=>b.className=b===btn?"primary":"secondary");
+  document.getElementById("playModePicker").dataset.selected=btn.dataset.play;refresh()
+ });
  document.querySelectorAll("#niveauPicker [data-niveau]").forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll("#niveauPicker [data-niveau]").forEach(b=>b.className=b===btn?"primary":"secondary");
   document.getElementById("niveauPicker").dataset.selected=btn.dataset.niveau
  });
  document.querySelectorAll("#lengthPicker [data-length]").forEach(btn=>btn.onclick=()=>{
-  document.querySelectorAll("#lengthPicker [data-length]").forEach(b=>b.className=b===btn?"primary":"secondary");
-  document.getElementById("lengthPicker").dataset.selected=btn.dataset.length;
-  document.getElementById("lengthHint").textContent=LENGTH_HINTS[btn.dataset.length]
- })
+  document.getElementById("lengthPicker").dataset.selected=btn.dataset.length;refresh()
+ });
+ refresh()
 }
 const TUTORIAL_SEEN_KEY="decodeMoiTutorialSeen";
 const DEFAULT_TUTORIAL_BODY=`<p>Deux étapes avant de commencer : installer l’application, puis créer le coffret que le parent envoie au jeune par un lien.</p>
@@ -692,11 +823,11 @@ function openGameManager(){
   return
  }
  const games=Object.values(store.games);
- const cards=games.map(game=>`<article class="card"><h3>${esc(game.team||"Partie sans nom")}</h3><p>${esc(game.teen||"Jeune")} + ${esc(game.parentName||"Parent")}<br><small>Code ${esc(game.room)}</small></p><div class="action-row"><button class="secondary" data-open-room="${esc(game.room)}">Ouvrir</button>${game.room===state.room?"":`<button class="danger" data-delete-room="${esc(game.room)}">Supprimer</button>`}</div></article>`).join("");
+ const cards=games.map(game=>`<article class="card"><h3>${esc(game.team||"Partie sans nom")}</h3><p>${gameCardLabel(game)}<br><small>Code ${esc(game.room)}</small></p><div class="action-row"><button class="secondary" data-open-room="${esc(game.room)}">Ouvrir</button>${game.room===state.room?"":`<button class="danger" data-delete-room="${esc(game.room)}">Supprimer</button>`}</div></article>`).join("");
  openModal("Options","Réglages",`
  <div class="action-row">
-  <button class="secondary" id="mgrSendCoffret">Envoyer le coffret</button>
-  <button class="secondary" id="mgrInviteRelay">Envoyer un relais</button>
+  ${isSolo()?"":`<button class="secondary" id="mgrSendCoffret">${isGroup()?"Inviter des joueurs":"Envoyer le coffret"}</button>`}
+  ${isSolo()||isGroup()?"":`<button class="secondary" id="mgrInviteRelay">Envoyer un relais</button>`}
   <button class="secondary" id="mgrShareApp">Partager le jeu</button>
  </div>
  <div class="action-row" style="margin-top:8px">
@@ -704,9 +835,9 @@ function openGameManager(){
   <button class="ghost" id="mgrReportIssue">✉️ Signaler un problème</button>
  </div>
  <hr>
- <div class="notice"><strong>Profil utilisé sur cet appareil :</strong> ${esc(profileName())}</div>
+ ${state.playMode==="duo"?`<div class="notice"><strong>Profil utilisé sur cet appareil :</strong> ${esc(profileName())}</div>
  <p class="muted" style="margin-top:6px">Ce réglage ne sert que si le jeune et le parent jouent sur le même téléphone (il sépare juste les indices). Si chacun a son propre téléphone, pas besoin d’y toucher.</p>
- <div class="mode-grid"><article class="mode-card"><h3>${esc(state.teen)}</h3><p>Profil du jeune. Les essais et indices restent séparés.</p><button class="${state.activeRole==="teen"?"primary":"secondary"}" data-role="teen">Utiliser ce profil</button></article><article class="mode-card"><h3>${esc(state.parentName)}</h3><p>Profil du parent sur le même appareil.</p><button class="${state.activeRole==="parent"?"primary":"secondary"}" data-role="parent">Utiliser ce profil</button></article></div>
+ <div class="mode-grid"><article class="mode-card"><h3>${esc(state.teen)}</h3><p>Profil du jeune. Les essais et indices restent séparés.</p><button class="${state.activeRole==="teen"?"primary":"secondary"}" data-role="teen">Utiliser ce profil</button></article><article class="mode-card"><h3>${esc(state.parentName)}</h3><p>Profil du parent sur le même appareil.</p><button class="${state.activeRole==="parent"?"primary":"secondary"}" data-role="parent">Utiliser ce profil</button></article></div>`:`<div class="notice"><strong>${isSolo()?"Partie en solo":"Tu joues en tant que"} :</strong> ${esc(isSolo()?state.teen:memberName(myKey()))}</div>${isGroup()?`<p class="muted" style="margin-top:6px">Participants : ${groupMembers().map(k=>esc(memberName(k))).join(", ")}</p>`:""}`}
  ${games.length>1?`<hr><p class="kicker">Changer de partie</p><div class="grid">${cards}</div>`:""}
  <hr>
  <div class="field"><label>Notifications « c’est ton tour »</label><p class="muted" style="margin:2px 0 8px;font-size:.85rem">${esc(notifPermissionLabel())}</p><button class="secondary" id="mgrEnableNotif">Activer les notifications</button></div>
@@ -750,8 +881,8 @@ function openGameManager(){
  document.getElementById("mgrTutorial").onclick=()=>openTutorial(true);
  document.getElementById("mgrReportIssue").onclick=openReportIssueModal;
  bindDevModeButtons();
- document.getElementById("mgrSendCoffret").onclick=openInviteChild;
- document.getElementById("mgrInviteRelay").onclick=sendRelayNotice;
+ (document.getElementById("mgrSendCoffret")||{}).onclick=openInviteChild;
+ (document.getElementById("mgrInviteRelay")||{}).onclick=sendRelayNotice;
  document.getElementById("mgrShareApp").onclick=shareAppFile;
  document.getElementById("mgrCopyCode").onclick=copyRoomCode;
  document.getElementById("mgrEnableNotif").onclick=async()=>{
@@ -779,7 +910,7 @@ function openRewardsModal(){
   if(payload&&payload.room){
    const room=String(payload.room).toUpperCase();
    const existing=store.games[room];
-   const newGame=existing?sanitizeGame(existing):sanitizeGame({...payload,room,created:true,activeRole:"teen",childJoined:true});
+   const newGame=existing?sanitizeGame(existing):sanitizeGame({...payload,room,created:true,activeRole:"teen",childJoined:true,myId:payload.playMode==="groupe"?newMemberId():""});
    store.games[room]=newGame;store.activeRoom=room;
    localStorage.setItem(STORE_KEY,JSON.stringify(store));state=newGame
   }
@@ -789,6 +920,7 @@ function openRewardsModal(){
  if(joinRaw||roomRaw)history.replaceState({},"",location.pathname)
 })();
 if(state.created)showMain();
+if(state.created&&isGroup()&&state.activeRole!=="parent"&&!myGroupName())setTimeout(askGroupName,300);
 pushToServer();
 setInterval(()=>{if(state.created)pushToServer()},4000);
 if(window.__openRoomAnswer)openParentAnswer(window.__openRoomAnswer);
@@ -812,16 +944,32 @@ document.getElementById("manageBtn").onclick=openGameManager;
 document.getElementById("progressCard").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.target.click()}});
 document.addEventListener("click",e=>{
  if(e.target?.id==="confirmCreate"){
-  const team=document.getElementById("newTeam").value.trim(),teen=document.getElementById("newTeen").value.trim(),parent=document.getElementById("newParent").value.trim();
-  if(!team||!teen||!parent){feedback("Complète les trois champs.","error");return}
-  const levelsMode=Number(document.getElementById("lengthPicker")?.dataset.selected)||12;
-  state=structuredClone(defaultState);state.created=true;state.team=team;state.teen=teen;state.parentName=parent;state.activeRole="teen";state.room=randomRoom();state.parentLastSeen=Date.now();state.levelsMode=levelsMode;state.niveau=document.getElementById("niveauPicker")?.dataset.selected||"junior";save();closeModal();showMain();openInviteChild()
+  const mode=document.getElementById("playModePicker")?.dataset.selected||"duo";
+  let team=document.getElementById("newTeam").value.trim();
+  const teen=document.getElementById("newTeen").value.trim(),parent=document.getElementById("newParent").value.trim();
+  if(mode==="solo"){if(!teen){feedback("Écris ton prénom ou pseudo.","error");return}if(!team)team="Partie de "+teen}
+  else if(mode==="groupe"){if(!team||!parent){feedback("Complète le nom de l’équipe et ton nom.","error");return}}
+  else if(!team||!teen||!parent){feedback("Complète les trois champs.","error");return}
+  let levelsMode=Number(document.getElementById("lengthPicker")?.dataset.selected)||12;
+  if(mode==="solo"&&levelsMode===36)levelsMode=24;
+  state=structuredClone(defaultState);state.created=true;state.playMode=mode;state.team=team;
+  state.teen=mode==="groupe"?"":teen;state.parentName=mode==="solo"?"":parent;
+  state.activeRole=mode==="groupe"?"parent":"teen";state.room=randomRoom();state.parentLastSeen=Date.now();state.levelsMode=levelsMode;
+  state.niveau=document.getElementById("niveauPicker")?.dataset.selected||"junior";
+  if(mode==="solo")state.childJoined=true;
+  save();closeModal();showMain();if(mode!=="solo")openInviteChild()
  }
 });
 document.getElementById("joinBtn").onclick=showParent;document.getElementById("backHomeBtn").onclick=showHome;
-function coffretJoinLink(){return appLink("join="+encodeInvite({team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,levelsMode:state.levelsMode,niveau:state.niveau}))}
+function coffretJoinLink(){return appLink("join="+encodeInvite({playMode:state.playMode,team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,levelsMode:state.levelsMode,niveau:state.niveau}))}
 function openInviteChild(){
- openModal("Coffret créé","Étape suivante",`<p>Envoyez ce lien à <strong>${esc(state.teen)}</strong> : en l’ouvrant sur son téléphone, le coffret s’installe automatiquement, prêt à jouer.</p>
+ if(isGroup()){
+  const ps=groupPlayers();
+  openModal("Inviter les joueurs","À plusieurs",`<p>Envoie ce lien à <strong>chaque joueur</strong> (par message, ou dans un groupe de discussion). En l’ouvrant sur son téléphone, chacun donne son prénom et rejoint la partie.</p>
+  <div class="code-box">${esc(coffretJoinLink())}</div>
+  <div class="action-row" style="margin-top:12px"><button class="primary" id="shareJoin">Envoyer le lien</button><button class="secondary" id="copyJoin">Copier le lien</button></div>
+  <p class="muted" style="margin-top:12px">${ps.length?`Déjà dans la partie : ${ps.map(([,p])=>esc(p.name)).join(", ")}.`:"Personne n’a encore rejoint la partie."} On peut rejoindre en cours de route. Tu retrouveras ce lien dans les options (•••).</p>`);
+ }else openModal("Coffret créé","Étape suivante",`<p>Envoyez ce lien à <strong>${esc(state.teen)}</strong> : en l’ouvrant sur son téléphone, le coffret s’installe automatiquement, prêt à jouer.</p>
  <div class="code-box">${esc(coffretJoinLink())}</div>
  <div class="action-row" style="margin-top:12px"><button class="primary" id="shareJoin">Envoyer le lien</button><button class="secondary" id="copyJoin">Copier le lien</button></div>
  <p class="muted" style="margin-top:12px">Vous pourrez retrouver ce lien plus tard avec le bouton « Envoyer le coffret » du tableau de bord.</p>`);
@@ -829,9 +977,21 @@ function openInviteChild(){
  document.getElementById("copyJoin").onclick=async()=>{try{await navigator.clipboard.writeText(coffretJoinLink());alert("Lien copié.")}catch(e){prompt("Copie ce lien :",coffretJoinLink())}}
 }
 document.getElementById("seeRulesLink").onclick=(e)=>{e.preventDefault();document.getElementById("rulesBtn").click()};
+function openMentionsLegales(){
+ openModal("Mentions légales et confidentialité","Décode-Moi",`
+ <p>Décode-Moi est un jeu <strong>Dee Kréations</strong>, diffusé <strong>gratuitement, à but non commercial</strong>.</p>
+ <p><strong>Éditeur</strong> : Dee Kréations, SASU en cours d'immatriculation, directrice de publication Vanessa Saint-Étienne. Contact : <a href="mailto:dee-kreations@dee-kreations.com">dee-kreations@dee-kreations.com</a></p>
+ <p><strong>Hébergement</strong> : Cloudflare, Inc., 101 Townsend Street, San Francisco, CA 94107, États-Unis — www.cloudflare.com</p>
+ <p><strong>Diffusion</strong> : jeu gratuit, librement partageable à usage non commercial. Merci de mentionner la source si vous le redistribuez.</p>
+ <p><strong>Vos données</strong> : pour les parties à deux ou à plusieurs, le code de la partie, les prénoms ou pseudos choisis et la progression des défis sont enregistrés sur le serveur pendant 120 jours, pour synchroniser les téléphones qui jouent ensemble — aucun nom complet n'est demandé pour jouer. Une partie en solo reste uniquement sur le téléphone. Si vous utilisez « Signaler un problème », le prénom indiqué, votre message et des informations techniques sur votre appareil sont transmis à l'éditeur pour traiter la demande.</p>
+ <p>Pour exercer vos droits (RGPD) ou demander la suppression de ces informations, écrivez à <a href="mailto:dee-kreations@dee-kreations.com">dee-kreations@dee-kreations.com</a>. Vous pouvez aussi saisir la CNIL (www.cnil.fr).</p>`)
+}
+document.getElementById("mentionsLegalesLink").onclick=(e)=>{e.preventDefault();openMentionsLegales()};
 
 function currentLevelIndex(){const i=state.completed.indexOf(false);return i===-1?LEVELS.length-1:i}
 function otherStatusText(){
+ if(isSolo())return `Partie en solo • ${state.teen||""}`;
+ if(isGroup())return groupStatusLine();
  if(!state.childJoined)return `En attente que ${state.teen||"le jeune"} rejoigne la partie`;
  const iAmParent=state.activeRole==="parent";
  const otherName=iAmParent?(state.teen||"le jeune"):(state.parentName||"le parent");
@@ -851,7 +1011,10 @@ function otherStatusText(){
  return `${otherName} • Vous attend pour le code à deux`
 }
 function computeMainAction(){
- if(!state.childJoined)return{label:"Envoyer le coffret",action:openInviteChild};
+ if(isGroup()){
+  if(state.activeRole!=="parent"&&!myGroupName())return{label:"Choisir mon prénom",action:askGroupName};
+  if(state.activeRole==="parent"&&!groupPlayers().length)return{label:"Inviter les joueurs",action:openInviteChild};
+ }else if(!state.childJoined)return{label:"Envoyer le coffret",action:openInviteChild};
  if(state.levelsMode>12){
   const schedule=scheduleFor(state.levelsMode);
   if(schedule.every(positionDone))return{label:"Revoir le parcours",action:positionOpenAction(schedule[schedule.length-1])};
@@ -869,6 +1032,8 @@ function computeMainAction(){
   }
   const solvedLocally=roleData().localAnswers["remoteCorrect"+idx];
   if(!solvedLocally)return{label:firstEver?"Commencer le défi":"Continuer l’aventure",action:()=>openLevel(idx)};
+  if(isSolo())return{label:"Valider le défi",action:()=>openLevel(idx)};
+  if(isGroup())return{label:"Voir qui a trouvé",action:()=>openLevel(idx)};
   if(!state.parentAnswers[idx])return{label:"Envoyer le relais",action:()=>openLevel(idx)};
   return{label:"Voir sa réponse",action:()=>openLevel(idx)}
  }
@@ -878,10 +1043,9 @@ function computeMainAction(){
 function sprintWinner(i){
  const sa=(state.sprintAnswers||{})[i];
  if(!sa)return null;
- if(sa.teen&&sa.parent)return sa.teen<=sa.parent?"teen":"parent";
- if(sa.teen)return "teen";
- if(sa.parent)return "parent";
- return null
+ let best=null;
+ Object.keys(sa).forEach(k=>{if(sa[k]&&(best===null||sa[k]<sa[best]))best=k});
+ return best
 }
 function fragmentComplete(i){
  if(!state.completed[i])return false;
@@ -927,7 +1091,11 @@ function renderLevels(){
   grid.appendChild(btn)
  })
 }
-function finalRevealMessage(){return `« Dieu est amour » (1 Jean 4:8). Regardez la personne à côté de vous : c’est un cadeau de Jéhovah. Prenez soin l’un de l’autre.`}
+function finalRevealMessage(){
+ if(isSolo())return "« Dieu est amour » (1 Jean 4:8). Jéhovah t’aime, et les personnes qui t’entourent sont un cadeau de sa part. Prends-en soin.";
+ if(isGroup())return "« Dieu est amour » (1 Jean 4:8). Regardez les personnes autour de vous : chacune est un cadeau de Jéhovah. Prenez soin les uns des autres.";
+ return "« Dieu est amour » (1 Jean 4:8). Regardez la personne à côté de vous : c’est un cadeau de Jéhovah. Prenez soin l’un de l’autre."
+}
 function completeLevel(i){
  if(state.completed[i]){feedback("Ce défi est déjà validé.","success");return}
  const before=state.completed.filter(Boolean).length;
@@ -965,8 +1133,8 @@ function matchesAnswer(meta,value){return meta.hashes.includes(hash(meta.salt+"|
 function personalHintBlock(i,hintText){
  const h=roleData().hints[i];
  if(h)return `<div class="hintbox"><strong>Indice :</strong> ${esc(hintText)}<br><small>Catégorie choisie : ${esc(h.category)}</small></div>`;
- return `<div id="personalGate" class="hidden"><div class="notice"><strong>Un indice peut être débloqué.</strong> Le jeune ou le parent répond à une question personnelle. Une réponse courte ou JOKER est acceptée.</div>
- <div class="field"><label for="personalWho">Qui répond ?</label><select id="personalWho"><option value="">Choisir…</option><option>Le jeune</option><option>Le parent</option></select></div>
+ return `<div id="personalGate" class="hidden"><div class="notice"><strong>Un indice peut être débloqué.</strong> Une personne répond à une question personnelle. Une réponse courte ou JOKER est acceptée.</div>
+ <div class="field"><label for="personalWho">Qui répond ?</label><select id="personalWho"><option value="">Choisir…</option>${hintWhoOptions()}</select></div>
  <div class="field"><label for="personalCategory">Catégorie</label><select id="personalCategory"><option value="">Choisir…</option>${Object.keys(PERSONAL_PROMPTS).map(c=>`<option>${c}</option>`).join("")}</select></div>
  <div class="field"><label for="personalPrompt">Question</label><input id="personalPrompt" readonly placeholder="Choisis une catégorie"></div>
  <div class="field"><label for="personalAnswer">Réponse ou JOKER</label><textarea id="personalAnswer"></textarea></div>
@@ -977,27 +1145,35 @@ function sharedPromptBlock(i,mineVal,otherVal,otherName){
  if(!sp)return "";
  if(mineVal&&otherVal)return `<hr><div class="notice"><strong>💬 ${esc(sp.category)}</strong><p>${esc(sp.question)}</p><p><strong>Toi :</strong> ${esc(mineVal)}</p><p><strong>${esc(otherName)} :</strong> ${esc(otherVal)}</p></div>`;
  if(mineVal&&!otherVal)return `<hr><div class="notice"><strong>💬 ${esc(sp.category)}</strong><p>${esc(sp.question)}</p><p class="muted">Réponse enregistrée. Vous verrez celle de ${esc(otherName)} dès qu’il/elle aura répondu aussi.</p></div>`;
- return `<hr><div class="notice"><strong>💬 Petit à-côté (facultatif) :</strong> ${esc(sp.question)}</div><div class="field"><label for="sharedAnswerInput">Ta réponse</label><textarea id="sharedAnswerInput" placeholder="Juste pour vous deux, ça n’empêche pas de valider le niveau"></textarea></div><button class="secondary" id="submitSharedAnswer">Envoyer ma réponse</button>`
+ return `<hr><div class="notice"><strong>💬 Petit à-côté (facultatif) :</strong> ${esc(sp.question)}</div><div class="field"><label for="sharedAnswerInput">Ta réponse</label><textarea id="sharedAnswerInput" placeholder="Juste entre vous, ça n’empêche pas de valider le niveau"></textarea></div><button class="secondary" id="submitSharedAnswer">Envoyer ma réponse</button>`
 }
 function devAnswerHint(answer){return isDevMode()&&answer?`<p class="muted" style="font-size:.8rem">🛠️ Mode dev — réponse : ${esc(answer)}</p>`:""}
-function remoteLevel(i){const m=remoteMeta(i),sa=state.sharedAnswers[i]||{};return `<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>${sharedPromptBlock(i,sa.teen,sa.parent,state.parentName||"le parent")}`}
+function remoteLevel(i){const m=remoteMeta(i),sa=state.sharedAnswers[i]||{};return `<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>${isSolo()?"Tu peux chercher dans ta Bible ou sur le téléphone.":isGroup()?"Le téléphone peut être utilisé pour la recherche, avec le groupe réuni.":"Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis."}</p></div>${relayInput(i)}${isGroup()?"":'<button class="primary" id="validateLevel">Valider le niveau</button>'}${sharedPromptFor(i)}`}
 function togetherGate(i,activityHtml){
  const t=TOGETHER_META[i];
+ if(isSolo())return `<div class="notice">En solo : fais cette activité seul(e), ou propose-la à quelqu’un de ta famille. Aucun code n’est nécessaire.</div>${activityHtml}`;
  if(!t||(state.togetherUnlocked&&state.togetherUnlocked[i]))return activityHtml;
  const devBoth=isDevMode()?`<p class="muted" style="font-size:.8rem">🛠️ Mode dev — code complet : ${esc(t.parentHalf)}${esc(t.teenHalf)}</p>`:"";
+ if(isGroup()){
+  const full=t.parentHalf+t.teenHalf,members=groupMembers(),n=Math.min(members.length,full.length),pieces=splitCode(full,n),k=members.indexOf(myKey());
+  const mine=k>=0&&k<n?`<div class="hintbox"><strong>Ton morceau (n° ${k+1} sur ${n}) :</strong> ${esc(pieces[k])}</div>`:`<div class="notice">Tu n’as pas de morceau cette fois : aide les autres à assembler le code.</div>`;
+  return `${mine}<p>Retrouvez-vous tous. Chacun lit son morceau à voix haute ; assemblez-les dans l’ordre des numéros (1, 2, 3…), puis tapez le code complet sur l’un des téléphones.</p>${devBoth}<div class="field"><label for="togetherCode">Code complet</label><input id="togetherCode" placeholder="Tous les morceaux assemblés"></div><button class="primary" id="checkTogether">Débloquer l’activité</button>`
+ }
  if(state.activeRole==="parent"){
   return `<p class="muted" style="margin-top:-4px">Vue parent : ta moitié du code.</p><div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.parentHalf)}</div><p>Retrouve ${esc(state.teen||"le jeune")}, échangez vos moitiés à voix haute, et fais-lui taper le code complet sur son téléphone pour débloquer l’activité.</p>${devBoth}`
  }
  return `<div class="hintbox"><strong>Ta moitié :</strong> ${esc(t.teenHalf)}</div><p>Demande à ${esc(state.parentName||"ton parent")} sa moitié du code (visible sur son téléphone), assemblez-les, puis tape le code complet ci-dessous.</p>${devBoth}<div class="field"><label for="togetherCode">Code complet</label><input id="togetherCode" placeholder="Les deux moitiés assemblées"></div><button class="primary" id="checkTogether">Débloquer l’activité</button>`
 }
 function parentOwnAnswer(i){
- const stage=i+1,m=PARENT_META[stage],sa=state.sharedAnswers[i]||{},shared=sharedPromptBlock(i,sa.parent,sa.teen,state.teen||"le jeune");
+ const stage=i+1,m=PARENT_META[stage],sa=state.sharedAnswers[i]||{},shared=sharedPromptFor(i);
  if(!m)return `<div class="notice">Pas d’énigme parent pour ce niveau.</div>${shared}`;
- if(state.parentAnswers[i])return `<div class="success"><strong>Tu as déjà répondu à cette énigme ✓</strong></div><p class="muted">${esc(state.teen||"Le jeune")} peut valider ce niveau depuis son appareil.</p>${shared}`;
- return `<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkParentOwn">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p></div><button class="primary hidden" id="submitParentOwn">Confirmer la réponse</button>${shared}`
+ if(state.parentAnswers[i])return `<div class="success"><strong>Tu as déjà répondu à cette énigme ✓</strong></div>${isGroup()?groupStatusHtml(i):`<p class="muted">${esc(state.teen||"Le jeune")} peut valider ce niveau depuis son appareil.</p>`}${shared}`;
+ return `<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkParentOwn">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p></div><button class="primary hidden" id="submitParentOwn">Confirmer la réponse</button>${isGroup()?"<hr>"+groupStatusHtml(i):""}${shared}`
 }
 
 function relayInput(i){
+ if(isSolo())return "";
+ if(isGroup())return `<hr>${groupStatusHtml(i)}`;
  const answered=!!(state.parentAnswers&&state.parentAnswers[i]);
  if(answered)return `<hr><div class="success" id="relayStatus"><strong>Réponse du parent reçue ✓</strong> Tu peux valider le niveau.</div>`;
  return `<hr><div class="notice" id="relayStatus"><strong>Il manque la réponse du parent.</strong> Touche « Prévenir le parent » pour l’inviter à répondre depuis son téléphone. Cet écran se met à jour tout seul dès qu’il a répondu.</div>
@@ -1006,9 +1182,9 @@ function relayInput(i){
 function openBonusChallenge(i){
  currentOpenLevel=null;currentOpenExtra={type:"bonus",index:i};
  const m=BONUS_META[i],done=state.bonusCompleted[i];
- openModal("Défi bonus","Série 2 — Parent",
+ openModal("Défi bonus",isSolo()?"Série 2 — Bonus":isGroup()?"Série 2 — Organisateur":"Série 2 — Parent",
   done?`<div class="success"><strong>Défi bonus déjà validé ✓</strong></div><p>${esc(m.question)}</p><p class="muted">Réponse : ${esc(m.answer)}</p>`
-  :`<p class="muted" style="margin:0 0 10px">À faire par le parent, sur son appareil.</p><p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="bonusAnswer">Réponse</label><input id="bonusAnswer"></div><button class="primary" id="checkBonus">Valider</button>`
+  :`${isSolo()?"":`<p class="muted" style="margin:0 0 10px">À faire par ${isGroup()?"l’organisateur":"le parent"}, sur son appareil.</p>`}<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="bonusAnswer">Réponse</label><input id="bonusAnswer"></div><button class="primary" id="checkBonus">Valider</button>`
  );
  const btn=document.getElementById("checkBonus");
  if(btn)btn.onclick=()=>{
@@ -1020,16 +1196,16 @@ function openBonusChallenge(i){
 }
 function openSprintChallenge(i){
  currentOpenLevel=null;currentOpenExtra={type:"sprint",index:i};
- const m=SPRINT_META[i],winner=sprintWinner(i),myRole=state.activeRole==="parent"?"parent":"teen";
+ const m=SPRINT_META[i],winner=sprintWinner(i),myRole=myKey();
  const alreadyAnswered=!!((state.sprintAnswers||{})[i]||{})[myRole];
  let body=`<p class="muted" style="margin:0 0 12px">⏱️ ${esc(SPRINT_DISCLAIMER)}</p>`;
  if(winner){
-  const winnerName=winner==="parent"?(state.parentName||"Le parent"):(state.teen||"Le jeune");
+  const winnerName=memberName(winner);
   body+=`<div class="success"><strong>🏁 ${esc(winnerName)} a gagné ce duel !</strong></div><p>${esc(m.question)}</p><p class="muted">Réponse : ${esc(m.answer)}</p>`;
  }else{
   body+=`<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}`;
   if(alreadyAnswered){
-   const otherName=myRole==="parent"?(state.teen||"le jeune"):(state.parentName||"le parent");
+   const otherName=isGroup()?"les autres":(myRole==="parent"?(state.teen||"le jeune"):(state.parentName||"le parent"));
    body+=`<div class="notice" id="sprintStatus"><strong>Ta réponse est enregistrée.</strong> En attente de ${esc(otherName)}…</div><div class="action-row"><button class="ghost" id="refreshSprint">Vérifier maintenant</button></div>`;
   }else{
    body+=`<div class="field"><label for="sprintAnswer">Réponse</label><input id="sprintAnswer"></div><button class="primary" id="checkSprint">Valider</button>`;
@@ -1105,7 +1281,7 @@ function level12(){
   return `<div class="success"><strong>🔓 Le coffre est déjà ouvert !</strong></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
   <p>« ${esc(FINAL_CODE_DISPLAY)} »</p>
-  <p class="muted">« Dieu est amour » (1 Jean 4:8). Regardez la personne à côté de vous : c’est un cadeau de Jéhovah. Prenez soin l’un de l’autre.</p>
+  <p class="muted">${esc(finalRevealMessage())}</p>
   ${isDevMode()?`<button class="secondary" id="devReplayLock" style="margin-top:10px">🛠️ Rejouer l’animation (mode dev)</button>`:""}
   ${riddlesRecapHtml()}`
  }
@@ -1197,15 +1373,15 @@ function bindLevel(i,isParentView){
    if(submitSharedP)submitSharedP.onclick=()=>{const val=document.getElementById("sharedAnswerInput").value.trim();if(!val){feedback("Écris une réponse (ou laisse tomber pour cette fois).","error");return}state.sharedAnswers[i]=state.sharedAnswers[i]||{};state.sharedAnswers[i].parent=val;state.parentLastSeen=Date.now();save();openLevel(i)};
    return
   }
-  document.getElementById("checkRemote").onclick=()=>{const ok=matchesAnswer(remoteMeta(i),document.getElementById("remoteAnswer").value);if(ok){roleData().localAnswers["remoteCorrect"+i]=true;save();feedback("Bonne réponse. Il reste à valider le relais.")}else{roleData().attempts[i]=(roleData().attempts[i]||0)+1;save();const gate=document.getElementById("personalGate");if(gate)gate.classList.remove("hidden");if(roleData().attempts[i]>=2&&roleData().hints[i])document.getElementById("researchTogether").classList.remove("hidden");feedback(roleData().attempts[i]===1?"Réponse incorrecte. Un indice peut être débloqué.":"Toujours incorrect. La recherche doit maintenant être faite ensemble.","error")}};
+  document.getElementById("checkRemote").onclick=()=>{const ok=matchesAnswer(remoteMeta(i),document.getElementById("remoteAnswer").value);if(ok){roleData().localAnswers["remoteCorrect"+i]=true;if(isGroup()&&state.myId){state.groupSolved[i]=state.groupSolved[i]||{};state.groupSolved[i][state.myId]=true}save();if(isGroup()){openLevel(i);feedback(state.completed[i]?"Bonne réponse ! Tout le monde a trouvé : défi validé.":"Bonne réponse ! On attend maintenant les autres.");return}feedback(isSolo()?"Bonne réponse ! Touche « Valider le niveau ».":"Bonne réponse. Il reste à valider le relais.")}else{roleData().attempts[i]=(roleData().attempts[i]||0)+1;save();const gate=document.getElementById("personalGate");if(gate)gate.classList.remove("hidden");if(roleData().attempts[i]>=2&&roleData().hints[i])document.getElementById("researchTogether").classList.remove("hidden");feedback(roleData().attempts[i]===1?"Réponse incorrecte. Un indice peut être débloqué.":"Toujours incorrect. La recherche doit maintenant être faite ensemble.","error")}};
   const submitSharedT=document.getElementById("submitSharedAnswer");
-  if(submitSharedT)submitSharedT.onclick=()=>{const val=document.getElementById("sharedAnswerInput").value.trim();if(!val){feedback("Écris une réponse (ou laisse tomber pour cette fois).","error");return}state.sharedAnswers[i]=state.sharedAnswers[i]||{};state.sharedAnswers[i].teen=val;save();openLevel(i)};
+  if(submitSharedT)submitSharedT.onclick=()=>{const val=document.getElementById("sharedAnswerInput").value.trim();if(!val){feedback("Écris une réponse (ou laisse tomber pour cette fois).","error");return}state.sharedAnswers[i]=state.sharedAnswers[i]||{};state.sharedAnswers[i][myKey()]=val;save();openLevel(i)};
  }
  const checkTogether=document.getElementById("checkTogether");
  if(checkTogether)checkTogether.onclick=()=>{
   const t=TOGETHER_META[i];
   if(t&&matchesAnswer(t,document.getElementById("togetherCode").value)){state.togetherUnlocked=state.togetherUnlocked||{};state.togetherUnlocked[i]=true;save();openLevel(i);playLockOpenAnimation("Activité débloquée !")}
-  else feedback("Code incorrect. Vérifiez les deux moitiés avec votre enfant/parent.","error")
+  else feedback(isGroup()?"Code incorrect. Vérifiez les morceaux et leur ordre (1, 2, 3…).":"Code incorrect. Vérifiez les deux moitiés avec votre enfant/parent.","error")
  };
  const checkFinalRiddles=document.getElementById("checkFinalRiddles");
  if(checkFinalRiddles)checkFinalRiddles.onclick=()=>{
@@ -1228,7 +1404,7 @@ function bindLevel(i,isParentView){
   if(LEVELS[i].mode==="remote"){
    const correct=matchesAnswer(remoteMeta(i),document.getElementById("remoteAnswer").value)||roleData().localAnswers["remoteCorrect"+i];
    if(!correct){feedback("La réponse principale doit être correcte.","error");return}
-   if(!state.parentAnswers[i]){feedback("Il manque encore la réponse du parent. Touche « Vérifier maintenant » après qu’il ait répondu.","error");return}
+   if(!isSolo()&&!state.parentAnswers[i]){feedback("Il manque encore la réponse du parent. Touche « Vérifier maintenant » après qu’il ait répondu.","error");return}
    completeLevel(i);return
   }
   if(i===1&&timerNotDone(1,5)){feedback("Terminez d’abord les cinq minutes sans téléphone.","error");return}
@@ -1249,7 +1425,7 @@ function bindLevel(i,isParentView){
 function openReward(i){
  const r=REWARDS[i],x=state.rewards[i]||{};
  openModal(r.title,"Récompense",`<div class="offline"><strong>Moment sans téléphone :</strong> règle identique pour le jeune et les adultes.</div>
- <div class="field"><label for="rewardWho">Avec qui ?</label><select id="rewardWho"><option value="">Choisir…</option><option ${x.withWho==="sa mère"?"selected":""}>sa mère</option><option ${x.withWho==="son père"?"selected":""}>son père</option><option ${x.withWho==="ses deux parents"?"selected":""}>ses deux parents</option></select></div>
+ <div class="field"><label for="rewardWho">Avec qui ?</label><select id="rewardWho"><option value="">Choisir…</option><option ${x.withWho==="sa mère"?"selected":""}>sa mère</option><option ${x.withWho==="son père"?"selected":""}>son père</option><option ${x.withWho==="ses deux parents"?"selected":""}>ses deux parents</option><option ${x.withWho==="toute la famille"?"selected":""}>toute la famille</option><option ${x.withWho==="tout le groupe"?"selected":""}>tout le groupe</option></select></div>
  <div class="field"><label for="rewardActivity">Activité</label><select id="rewardActivity"><option value="">Choisir…</option>${r.activities.map(a=>`<option ${x.activity===a?"selected":""}>${a}</option>`).join("")}</select></div>
  <div class="field"><label for="rewardDate">Date prévue</label><input id="rewardDate" type="date" value="${esc(x.date||"")}"></div>
  <button class="primary" id="saveReward">Réserver cette récompense</button>`);
@@ -1320,6 +1496,7 @@ document.getElementById("rulesBtn").onclick=()=>openModal("Règles de Décode-Mo
 <p><strong>Décode-Moi</strong> est un parcours évolutif : de nouveaux niveaux pourront être ajoutés sans changer le nom du jeu.</p>
 <p>Les niveaux se débloquent uniquement dans l’ordre. Aucune date n’est imposée.</p>
 <p>Un relais alterne avec une activité à réaliser ensemble.</p>
+<p>On peut jouer <strong>seul</strong> (sur un seul téléphone, sans relais ni code à assembler), <strong>à deux</strong> (un parent et un jeune, chacun sur son téléphone) ou <strong>à plusieurs</strong> (un organisateur et des joueurs, chacun sur son téléphone). À plusieurs, un défi se valide quand tout le monde a trouvé, le code des activités est partagé en autant de morceaux que de participants, et le duel revient au plus rapide.</p>
 <p>Les énigmes portent sur la Bible : la création, Noé, David, Jonas, Daniel, les illustrations de Jésus… Les activités ensemble invitent à lire un passage, à remercier Jéhovah et à prier ensemble. Elles peuvent trouver leur place pendant votre culte familial.</p>
 <p>À la création du coffret, on choisit le niveau des énigmes du jeune : enfant (6-9 ans), junior (10-13 ans) ou ado et adulte. Les énigmes du parent sont de niveau adulte.</p>
 <p>Après une première erreur, le jeune ou le parent peut obtenir un indice en répondant à une question sur un souvenir, un merci, une prière, un rêve, la Bible ou le pardon.</p>

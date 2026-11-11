@@ -41,17 +41,58 @@ function mergeSharedAnswers(a, b) {
   Object.keys(b || {}).forEach((k) => {
     const existing = out[k] || {};
     const incoming = b[k] || {};
-    out[k] = { teen: incoming.teen || existing.teen || "", parent: incoming.parent || existing.parent || "" };
+    const merged = { ...existing };
+    // Duo : clés "teen"/"parent" ; à plusieurs : une clé par participant.
+    Object.keys(incoming).slice(0, 40).forEach((r) => {
+      if (incoming[r]) merged[r] = String(incoming[r]).slice(0, 500);
+    });
+    out[k] = merged;
   });
   return out;
 }
+const PLAYER_ID_RE = /^[A-Za-z0-9]{4,16}$/;
+const MAX_PLAYERS = 30;
+function mergePlayers(a, b) {
+  const out = {};
+  [a || {}, b || {}].forEach((src) => {
+    Object.keys(src).forEach((id) => {
+      if (!PLAYER_ID_RE.test(id)) return;
+      const v = src[id] || {};
+      const name = String(v.name || "").slice(0, 24);
+      const cur = out[id];
+      if (!cur) {
+        if (Object.keys(out).length >= MAX_PLAYERS) return;
+        out[id] = { name, joined: Number(v.joined) || 0, lastSeen: Number(v.lastSeen) || 0 };
+        return;
+      }
+      if (!cur.name && name) cur.name = name;
+      const joined = Number(v.joined) || 0;
+      if (joined && (!cur.joined || joined < cur.joined)) cur.joined = joined;
+      cur.lastSeen = Math.max(cur.lastSeen, Number(v.lastSeen) || 0);
+    });
+  });
+  return out;
+}
+function mergeGroupSolved(a, b) {
+  const out = {};
+  [a || {}, b || {}].forEach((src) => {
+    Object.keys(src).forEach((k) => {
+      if (!/^\d{1,2}$/.test(k)) return;
+      const v = src[k] || {};
+      out[k] = out[k] || {};
+      Object.keys(v).forEach((id) => { if (v[id] && PLAYER_ID_RE.test(id)) out[k][id] = true; });
+    });
+  });
+  return out;
+}
+const PLAY_MODES = ["duo", "groupe"];
 function mergeSprintAnswers(a, b) {
   const out = { ...(a || {}) };
   Object.keys(b || {}).forEach((k) => {
     const existing = out[k] || {};
     const incoming = b[k] || {};
     const merged = { ...existing };
-    ["teen", "parent"].forEach((role) => {
+    Object.keys(incoming).slice(0, 40).forEach((role) => {
       const bv = incoming[role];
       if (!bv) return;
       merged[role] = merged[role] ? Math.min(merged[role], bv) : bv;
@@ -76,6 +117,9 @@ function mergeRoom(existing, incoming) {
     levelsMode: [12, 24, 36].includes(Number(incoming.levelsMode)) ? Number(incoming.levelsMode) : ([12, 24, 36].includes(Number(base.levelsMode)) ? Number(base.levelsMode) : 12),
     bonusCompleted: mergeBoolArray(base.bonusCompleted, incoming.bonusCompleted),
     sprintAnswers: mergeSprintAnswers(base.sprintAnswers, incoming.sprintAnswers),
+    playMode: PLAY_MODES.includes(base.playMode) ? base.playMode : (PLAY_MODES.includes(incoming.playMode) ? incoming.playMode : "duo"),
+    players: mergePlayers(base.players, incoming.players),
+    groupSolved: mergeGroupSolved(base.groupSolved, incoming.groupSolved),
     childJoined: Boolean(base.childJoined || incoming.childJoined),
     finalRiddlesSolved: Boolean(base.finalRiddlesSolved || incoming.finalRiddlesSolved),
     teenLastSeen: Math.max(Number(base.teenLastSeen) || 0, Number(incoming.teenLastSeen) || 0),
