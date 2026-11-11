@@ -7,13 +7,14 @@ function json(obj, status = 200) {
 
 const ROOM_RE = /^[A-Z0-9]{4,10}$/;
 const LEVEL_COUNT = 12;
-const DEV_CODE = "1397";
+// Code développeur : secret Cloudflare (npx wrangler secret put DEV_CODE),
+// jamais écrit dans le code. Sans secret, les fonctions développeur sont fermées.
 const REPORTS_KEY = "reports";
 const CONFIG_KEY = "config";
 const MAX_REPORTS = 200;
 
-function isDevRequest(request) {
-  return request.headers.get("x-dev-code") === DEV_CODE;
+function isDevRequest(request, env) {
+  return Boolean(env.DEV_CODE) && request.headers.get("x-dev-code") === env.DEV_CODE;
 }
 
 function mergeBoolArray(a, b) {
@@ -135,7 +136,7 @@ async function handleReports(request, env) {
     return json({ ok: true });
   }
 
-  if (!isDevRequest(request)) return json({ error: "forbidden" }, 403);
+  if (!isDevRequest(request, env)) return json({ error: "forbidden" }, 403);
 
   if (request.method === "GET") {
     const raw = await env.ROOMS.get(REPORTS_KEY);
@@ -165,7 +166,7 @@ async function handleConfig(request, env) {
     return json(raw ? JSON.parse(raw) : {});
   }
 
-  if (!isDevRequest(request)) return json({ error: "forbidden" }, 403);
+  if (!isDevRequest(request, env)) return json({ error: "forbidden" }, 403);
 
   if (request.method === "PUT") {
     let body;

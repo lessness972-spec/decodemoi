@@ -215,7 +215,7 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
 <section class="hero" id="home">
   <div class="kicker">Le jeu commence ici</div>
   <h1 class="home-title">Décode-Moi</h1>
-  <p class="muted" style="margin:-6px 0 20px;max-width:56ch">Un parcours de 12 défis à réaliser en duo : une énigme à distance alterne avec une activité sans téléphone à faire ensemble. Le parent crée le coffret et l’envoie par un lien ; les énigmes à distance se répondent aussi par lien, sans rien recopier. <a href="#" id="seeRulesLink" style="color:var(--cyan-bright)">Voir les règles en détail</a>.</p>
+  <p class="muted" style="margin:-6px 0 20px;max-width:56ch"><strong>Les énigmes de la Bible en famille.</strong> Un parcours de 12 défis à réaliser en duo : une énigme à distance alterne avec une activité sans téléphone à faire ensemble. Le parent crée le coffret et l’envoie par un lien ; les énigmes à distance se répondent aussi par lien, sans rien recopier. <a href="#" id="seeRulesLink" style="color:var(--cyan-bright)">Voir les règles en détail</a>.</p>
   <div class="mode-grid">
     <article class="mode-card"><h3>Créer le coffret</h3><p>Le parent remplit les prénoms, puis envoie le coffret par un lien.</p><button class="primary" id="createBtn">Créer</button></article>
     <article class="mode-card"><h3>J’ai reçu un lien</h3><p>Ouvre-le simplement : le coffret ou l’énigme s’affichent tout seuls.</p><button class="secondary" id="joinBtn">Entrer un code à la main</button></article>
@@ -255,7 +255,7 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
   <div class="level-tiles" id="levelGrid"></div>
 </section>
 
-<p class="footer">Les liens échangés ne contiennent aucun nom complet. La progression est sauvegardée sur chaque téléphone et synchronisée entre les deux.</p>
+<p class="footer">Décode-Moi est un produit Dee Kréations. Les liens échangés ne contiennent aucun nom complet. La progression est sauvegardée sur chaque téléphone et synchronisée entre les deux.</p>
 <footer class="dee-footer">
   <img src="assets/dee-monogram.png" alt="Dee Kréations">
   <div><strong>Dee Kréations</strong><span>L’élégance de l’idée, la force de la création.</span></div>
@@ -284,92 +284,20 @@ hr{border:0;border-top:1px solid var(--line);margin:19px 0}
 </div></div>
 
 <script>
-const LEVELS=[
- {mode:"remote",title:"Le nombre disparu",tag:"Relais",desc:"Une énigme de logique à résoudre sur deux appareils."},
- {mode:"together",title:"La tour codée",tag:"Activité",desc:"Construire, observer et décoder ensemble."},
- {mode:"remote",title:"La carte sans nom",tag:"Relais",desc:"Une question de culture générale à résoudre à distance."},
- {mode:"together",title:"Les cinq objets",tag:"Activité",desc:"Une chasse aux objets à réaliser ensemble."},
- {mode:"remote",title:"Le verbe masqué",tag:"Relais",desc:"Une question de français à résoudre sur deux appareils."},
- {mode:"together",title:"Le pont impossible",tag:"Activité",desc:"Construire un passage avec peu de matériel."},
- {mode:"remote",title:"La planète rouge",tag:"Relais",desc:"Une question scientifique à résoudre à distance."},
- {mode:"together",title:"Le défi mémoire",tag:"Activité",desc:"Observer, cacher puis retrouver ensemble."},
- {mode:"remote",title:"Le pourcentage secret",tag:"Relais",desc:"Une question de mathématiques à résoudre sur deux appareils."},
- {mode:"together",title:"La piste extérieure",tag:"Activité",desc:"Une courte sortie avec trois éléments à repérer."},
- {mode:"remote",title:"Le tableau célèbre",tag:"Relais",desc:"Une dernière question de culture générale à distance."},
- {mode:"together",title:"Le défi final",tag:"Activité",desc:"Résoudre trois mini-énigmes et débloquer le dernier palier."}
-];
-const REMOTE_META={
- 0:{question:"Quel nombre complète la suite : 5, 10, 20, 40, ?",salt:"R0",hashes:["16NFRW9"],hint:"Chaque nombre est le double du précédent.",research:"Cherchez ensemble comment reconnaître une suite où chaque nombre est multiplié par deux.",answer:"80"},
- 2:{question:"Quel est le plus grand océan du monde ?",salt:"R2",hashes:["1WAQ2A6","16TONEC"],hint:"Il borde notamment l’Asie, l’Océanie et les Amériques.",research:"Cherchez ensemble une carte du monde et comparez la taille des océans.",answer:"Pacifique"},
- 4:{question:"Dans « Nous partirons demain », quel est l’infinitif du verbe ?",salt:"R4",hashes:["07FHZJR"],hint:"Retire la terminaison du futur pour retrouver le verbe d’origine.",research:"Cherchez ensemble comment se forme le futur simple du verbe partir.",answer:"partir"},
- 6:{question:"Quelle planète est surnommée la planète rouge ?",salt:"R6",hashes:["05EWLC2"],hint:"Elle porte le nom du dieu romain de la guerre.",research:"Cherchez ensemble les planètes du système solaire et leurs surnoms.",answer:"Mars"},
- 8:{question:"Combien font 15 % de 200 ?",salt:"R8",hashes:["01N9GZM"],hint:"10 % de 200 font 20 et 5 % font 10.",research:"Cherchez ensemble une méthode simple pour calculer un pourcentage.",answer:"30"},
- 10:{question:"Qui a peint La Joconde ?",salt:"R10",hashes:["0JIER17","07D99DD"],hint:"C’était un artiste et inventeur italien de la Renaissance.",research:"Cherchez ensemble le musée où se trouve La Joconde et le nom de son peintre.",answer:"Léonard de Vinci"}
-};
-const PARENT_META={
- 1:{question:"Quel nombre vient après 3, 6, 12, 24 ?",salt:"P1",hashes:["0JU9LNI"],hint:"Le nombre double à chaque étape.",research:"Cherchez ensemble la règle de cette suite.",answer:"48"},
- 3:{question:"Quelle est la capitale de l’Italie ?",salt:"P3",hashes:["0B0CMV1"],hint:"La ville abrite le Colisée.",research:"Cherchez ensemble une carte de l’Italie.",answer:"Rome"},
- 5:{question:"Quel est l’infinitif de « nous finirons » ?",salt:"P5",hashes:["0FNEGIO"],hint:"Retire la terminaison du futur.",research:"Cherchez ensemble la conjugaison de finir au futur.",answer:"finir"},
- 7:{question:"Combien de planètes compte le système solaire ?",salt:"P7",hashes:["1A8QQX8","051V3ME"],hint:"Pluton est classée comme planète naine.",research:"Cherchez ensemble la liste des planètes.",answer:"8"},
- 9:{question:"Combien font 25 % de 80 ?",salt:"P9",hashes:["0S42GT4"],hint:"25 % représentent un quart.",research:"Cherchez ensemble comment calculer un quart de 80.",answer:"20"},
- 11:{question:"Dans quel pays se trouve Tokyo ?",salt:"P11",hashes:["1GSHCU7","1JFKCI6"],hint:"C’est un archipel d’Asie.",research:"Cherchez ensemble une carte de l’Asie.",answer:"Japon"}
-};
-const FINAL_META=[
- {salt:"F1",hashes:["1KT94J2"],answer:"6"},
- {salt:"F2",hashes:["1EBP4UU"],answer:"E"},
- {salt:"F3",hashes:["13VSUQT"],answer:"dedans"}
-];
-const TOGETHER_META={
- 1:{parentHalf:"FALCON",teenHalf:"ORAGE",salt:"T1",hashes:["1H2GP1X","0H935R7"]},
- 3:{parentHalf:"COMETE",teenHalf:"SAPHIR",salt:"T3",hashes:["0CXIJ0W","1QREEN2"]},
- 5:{parentHalf:"LANTERNE",teenHalf:"BOUSSOLE",salt:"T5",hashes:["10OMW3V","1BUKBD5"]},
- 7:{parentHalf:"PHENIX",teenHalf:"MERIDIEN",salt:"T7",hashes:["0GLANW5","0T21U0X"]},
- 9:{parentHalf:"ECLIPSE",teenHalf:"HORIZON",salt:"T9",hashes:["0CKZQ8U","1V0WKC4"]}
-};
-const PERSONAL_PROMPTS={
- "Souvenir":["Quel souvenir te fait encore rire ?","Quel moment aimerais-tu revivre une fois ?"],
- "Peur":["Quelle petite peur aimerais-tu réussir à dépasser ?","Qu’est-ce qui t’impressionne plus que tu ne le montres ?"],
- "Rêve":["Quel projet aimerais-tu vraiment réaliser ?","Où aimerais-tu aller au moins une fois ?"],
- "Regret":["Quelle petite chose aurais-tu aimé faire autrement ?","Quelle occasion manquée aimerais-tu retrouver ?"],
- "Secret léger":["Quelle habitude amusante peu de personnes connaissent ?","Quel goût, film ou musique apprécies-tu sans toujours l’avouer ?"]
-};
-const SHARED_PROMPT_BY_LEVEL={
- 0:{category:"Souvenir",question:"Quel souvenir te fait encore rire ?"},
- 2:{category:"Rêve",question:"Quel projet aimerais-tu vraiment réaliser ?"},
- 4:{category:"Peur",question:"Quelle petite peur aimerais-tu réussir à dépasser ?"},
- 6:{category:"Secret léger",question:"Quelle habitude amusante peu de personnes connaissent ?"},
- 8:{category:"Regret",question:"Quelle petite chose aurais-tu aimé faire autrement ?"},
- 10:{category:"Souvenir",question:"Quel moment aimerais-tu revivre une fois ?"}
-};
+const LEVELS=[{"mode":"remote","title":"Au commencement","tag":"Relais","desc":"Une énigme sur la création, à résoudre sur deux appareils."},{"mode":"together","title":"La tour de Babel","tag":"Activité","desc":"Construire ensemble, puis lire le récit."},{"mode":"remote","title":"L’arche","tag":"Relais","desc":"Une énigme sur Noé et le déluge, à distance."},{"mode":"together","title":"Les cinq mercis","tag":"Activité","desc":"Cinq objets pour remercier Jéhovah, ensemble."},{"mode":"remote","title":"Le berger et le géant","tag":"Relais","desc":"Une énigme sur David, à résoudre sur deux appareils."},{"mode":"together","title":"La maison sur le roc","tag":"Activité","desc":"Construire du solide avec peu de matériel."},{"mode":"remote","title":"L’énorme poisson","tag":"Relais","desc":"Une énigme sur Jonas, à distance."},{"mode":"together","title":"Le repas partagé","tag":"Activité","desc":"Préparer, remercier Jéhovah et partager."},{"mode":"remote","title":"La fosse aux lions","tag":"Relais","desc":"Une énigme sur Daniel, sur deux appareils."},{"mode":"together","title":"La balade de la création","tag":"Activité","desc":"Une courte sortie pour s’émerveiller."},{"mode":"remote","title":"Les illustrations de Jésus","tag":"Relais","desc":"Une dernière énigme sur les histoires racontées par Jésus."},{"mode":"together","title":"Le coffre final","tag":"Activité","desc":"Trois mini-énigmes, puis le message caché."}];
+// Énigmes du jeune selon le niveau choisi à la création du coffret.
+const REMOTE_META_BY_NIVEAU={"enfant":{"0":{"question":"Combien de jours de création y a-t-il eu avant le jour où Dieu s’est reposé ?","salt":"RE0","hashes":["1H1W3LY","0E32O50"],"hint":"Le jour d’après, le septième, Dieu s’est reposé.","research":"Lisez ensemble Genèse 1 et comptez les « Il y eut un soir et il y eut un matin ».","answer":"6"},"2":{"question":"Quel oiseau est revenu vers Noé avec une feuille d’olivier dans le bec ?","salt":"RE2","hashes":["1U85EFH"],"hint":"C’est un oiseau blanc, symbole de paix.","research":"Lisez ensemble Genèse 8:8-11.","answer":"colombe"},"4":{"question":"Avec quoi David a-t-il fait tomber le géant Goliath ?","salt":"RE4","hashes":["064CPHI","0V2DXIP","0X03JHF","0ZHV7F2"],"hint":"Il avait choisi cinq pierres lisses dans le lit de la rivière.","research":"Lisez ensemble 1 Samuel 17:40-49.","answer":"fronde"},"6":{"question":"Quel animal Jéhovah a-t-il envoyé pour avaler Jonas ?","salt":"RE6","hashes":["1G8WRAL","1QXOS3P","1XMZUVV","1KCH59A"],"hint":"Un très grand animal qui vit dans la mer.","research":"Lisez ensemble Jonas 1:17.","answer":"énorme poisson"},"8":{"question":"Dans quel endroit Daniel a-t-il été jeté parce qu’il priait Jéhovah ?","salt":"RE8","hashes":["0XRKELT","1L75S50","10GQQ4V","0U0G10K"],"hint":"Des animaux très forts, avec une crinière.","research":"Lisez ensemble Daniel 6:16-22.","answer":"fosse aux lions"},"10":{"question":"Dans l’histoire de la brebis perdue, combien de brebis avait l’homme ?","salt":"RE10","hashes":["0ST7HDM","06QOEMX"],"hint":"Il en laisse 99 pour aller chercher celle qui est perdue.","research":"Lisez ensemble Luc 15:4-7.","answer":"100"}},"junior":{"0":{"question":"Comment s’appelle le premier homme que Jéhovah a formé avec de la poussière du sol ?","salt":"RJ0","hashes":["172KJ7Y"],"hint":"Son nom ressemble au mot hébreu qui veut dire « sol ».","research":"Lisez ensemble Genèse 2:7 et Genèse 5:1.","answer":"Adam"},"2":{"question":"Pendant combien de jours et de nuits la pluie est-elle tombée lors du déluge ?","salt":"RJ2","hashes":["1KL8OWV","04C329Y"],"hint":"Ce nombre revient souvent dans la Bible : Jésus a jeûné autant de jours dans le désert.","research":"Lisez ensemble Genèse 7:12.","answer":"40"},"4":{"question":"À quel peuple appartenait le géant Goliath ?","salt":"RJ4","hashes":["1V8OWB4","16FNVJ7"],"hint":"Il venait de la ville de Gath.","research":"Lisez ensemble 1 Samuel 17:4-8.","answer":"Philistins"},"6":{"question":"Dans quelle grande ville Jéhovah a-t-il envoyé Jonas ?","salt":"RJ6","hashes":["083N11A"],"hint":"C’était une grande ville d’Assyrie.","research":"Lisez ensemble Jonas 1:1, 2.","answer":"Ninive"},"8":{"question":"Quel roi a fait jeter Daniel dans la fosse aux lions ?","salt":"RJ8","hashes":["0E80G6Z","0CW0WB1","1HXLXCJ"],"hint":"C’était un roi mède.","research":"Lisez ensemble Daniel 6:6-16.","answer":"Darius"},"10":{"question":"Dans l’illustration du fils prodigue, combien de fils a le père ?","salt":"RJ10","hashes":["0OOMGME","0O2RQVQ"],"hint":"Le plus jeune part loin, l’aîné reste à la maison.","research":"Lisez ensemble Luc 15:11-32.","answer":"2"}},"ado":{"0":{"question":"Que veut dire le mot « Genèse », titre du premier livre de la Bible ?","salt":"RA0","hashes":["1H1N29P","0RL1NAI","0Y0UD41","01984UZ","1CS27VL"],"hint":"Le premier verset commence par « Au commencement… ».","research":"Cherchez ensemble l’origine du mot « Genèse » dans l’introduction du livre sur jw.org.","answer":"origine"},"2":{"question":"Quel signe Dieu donne-t-il comme signe de l’alliance avec Noé et la terre ?","salt":"RA2","hashes":["0HSYTO2","1OB5GH8"],"hint":"On le voit parfois dans les nuages quand le soleil revient après la pluie.","research":"Lisez ensemble Genèse 9:12-16.","answer":"arc-en-ciel"},"4":{"question":"Comment s’appelait le père de David ?","salt":"RA4","hashes":["0R1ZMMA","1HJ9VEQ"],"hint":"Il habitait Bethléem et avait huit fils.","research":"Lisez ensemble 1 Samuel 17:12.","answer":"Jessé"},"6":{"question":"Combien de jours et de nuits Jonas est-il resté dans le ventre du poisson ?","salt":"RA6","hashes":["1MLC75B","14H6R09"],"hint":"Jésus compare ce temps à celui qu’il passera dans la tombe.","research":"Lisez ensemble Jonas 1:17, puis Matthieu 12:40.","answer":"3"},"8":{"question":"Dans le rêve de Nabuchodonosor, en quoi était la tête de la grande statue ?","salt":"RA8","hashes":["1UQO8OD","07JDSDS","14AZO74","1DGWEFX","1QWGIIC"],"hint":"Le plus précieux des métaux de la statue.","research":"Lisez ensemble Daniel 2:31-38.","answer":"or"},"10":{"question":"Dans l’illustration du bon Samaritain, qui passe sans s’arrêter ? Donnez l’un des deux.","salt":"RA10","hashes":["0UJ9KP5","0LCJ84E"],"hint":"Deux hommes au service du temple.","research":"Lisez ensemble Luc 10:30-37.","answer":"prêtre"}}};
+const NIVEAUX={enfant:"Enfant (6-9 ans)",junior:"Junior (10-13 ans)",ado:"Ado et adulte"};
+function remoteMeta(i){return (REMOTE_META_BY_NIVEAU[state.niveau]||REMOTE_META_BY_NIVEAU.junior)[i]}
+const PARENT_META={"1":{"question":"Combien de livres compte la Bible en tout ?","salt":"PJ1","hashes":["1PZDYWU","0VCPHQX"],"hint":"Les Écritures hébraïques en comptent 39.","research":"Ouvrez ensemble la liste des livres au début de la Bible.","answer":"66"},"3":{"question":"Sur quelle montagne Jéhovah est-il descendu devant Moïse et le peuple ?","salt":"PJ3","hashes":["0LVTETS","1NR7ZE2","04ZJKBI","1JR82XW"],"hint":"Elle a donné son nom à une péninsule entre l’Égypte et l’Arabie.","research":"Lisez ensemble Exode 19:11, 18-20.","answer":"Sinaï"},"5":{"question":"Quel apôtre a renié Jésus trois fois avant qu’un coq chante ?","salt":"PJ5","hashes":["005IO53","19BZY2H","0IFRI3C","12JQEHE"],"hint":"Il était pêcheur, et on l’appelait aussi Céphas.","research":"Lisez ensemble Luc 22:34, 54-62.","answer":"Pierre"},"7":{"question":"Dans quel village Jésus a-t-il changé l’eau en vin lors d’un mariage ?","salt":"PJ7","hashes":["10HQ6M5","0YO8SJR"],"hint":"Un village de Galilée ; c’était le commencement de ses miracles.","research":"Lisez ensemble Jean 2:1-11.","answer":"Cana"},"9":{"question":"Combien d’apôtres Jésus a-t-il choisis ?","salt":"PJ9","hashes":["0SNEMQ1","1W72QSR"],"hint":"Autant que les tribus d’Israël.","research":"Lisez ensemble Luc 6:12-16.","answer":"12"},"11":{"question":"Quel est le premier livre des Écritures grecques chrétiennes ?","salt":"PJ11","hashes":["0QT8P40","16GEYLE","0U4KSDW"],"hint":"Il était collecteur d’impôts avant de suivre Jésus.","research":"Ouvrez ensemble la liste des livres de la Bible.","answer":"Matthieu"}};
+const FINAL_META=[{"salt":"FJ1","hashes":["1SKT1LD","11S6ZW4"],"answer":"7"},{"salt":"FJ2","hashes":["0Y89FVB"],"answer":"J"},{"salt":"FJ3","hashes":["1UKD2GB"],"answer":"lumière"}];
+const FINAL_QUESTIONS=[["Combien de jours compte le récit de la création, en comptant le jour où Dieu se repose ?","numeric",3],["Quelle est la première lettre du nom de Dieu ?","",2],["Dieu dit : « Qu’il y ait de la … » (Genèse 1:3). Quel est ce mot ?","",20]];
+const TOGETHER_META={"1":{"parentHalf":"ARCHE","teenHalf":"ALLIANCE","salt":"TJ1","hashes":["0MPMWXO","0WS9KPM"]},"3":{"parentHalf":"MANNE","teenHalf":"DESERT","salt":"TJ3","hashes":["03YXK58","00GNG56"]},"5":{"parentHalf":"ROC","teenHalf":"SAGESSE","salt":"TJ5","hashes":["1P3QQD3","131ZNOX"]},"7":{"parentHalf":"PAIN","teenHalf":"PARTAGE","salt":"TJ7","hashes":["09SMUH0","1DQXQPO"]},"9":{"parentHalf":"LUMIERE","teenHalf":"CHEMIN","salt":"TJ9","hashes":["1WVA48H","0QOIBEX"]}};
+const PERSONAL_PROMPTS={"Souvenir":["Quel souvenir de famille te fait encore sourire ?","Quel moment aimerais-tu revivre une fois ?"],"Merci":["Pour quoi aimerais-tu remercier Jéhovah aujourd’hui ?","Quelle personne aimerais-tu remercier, et pourquoi ?"],"Prière":["Pour qui aimerais-tu qu’on prie ensemble ?","Qu’aimerais-tu confier à Jéhovah en ce moment ?"],"Rêve":["Quel projet aimerais-tu vraiment réaliser ?","Quel talent aimerais-tu développer ?"],"Bible":["Quel personnage de la Bible te plaît le plus, et pourquoi ?","Quel récit de la Bible aimerais-tu qu’on relise ensemble ?"],"Pardon":["Quelle petite chose aimerais-tu qu’on se pardonne ?","Quand t’es-tu senti(e) pardonné(e) ?"]};
+const SHARED_PROMPT_BY_LEVEL={"0":{"category":"Merci","question":"Pour quoi aimerais-tu remercier Jéhovah aujourd’hui ?"},"2":{"category":"Souvenir","question":"Quel souvenir de famille te fait encore sourire ?"},"4":{"category":"Rêve","question":"Quel talent aimerais-tu développer ?"},"6":{"category":"Bible","question":"Quel personnage de la Bible te plaît le plus, et pourquoi ?"},"8":{"category":"Prière","question":"Pour qui aimerais-tu qu’on prie ensemble ?"},"10":{"category":"Pardon","question":"Quand t’es-tu senti(e) pardonné(e) ?"}};
 const FRAGMENT_COUNT=12;
-const BONUS_META=[
- {question:"Quel nombre complète la suite : 2, 6, 18, 54, ?",salt:"B0",hashes:["1EV2FW8"],answer:"162"},
- {question:"Quel est le plus long fleuve du monde ?",salt:"B1",hashes:["0X73WS8","1X5MD3J"],answer:"Le Nil"},
- {question:"Quel est le participe passé du verbe « prendre » ?",salt:"B2",hashes:["1BT48AX"],answer:"Pris"},
- {question:"Quel organe pompe le sang dans le corps ?",salt:"B3",hashes:["061NOB9","10ZXX5K"],answer:"Le cœur"},
- {question:"Quel est le double de 45 ?",salt:"B4",hashes:["0NR39MS"],answer:"90"},
- {question:"En quelle année a eu lieu la prise de la Bastille ?",salt:"B5",hashes:["07JH5SB"],answer:"1789"},
- {question:"Quel est le contraire de « généreux » ?",salt:"B6",hashes:["1B8HDUU"],answer:"Avare"},
- {question:"Quel est le plus grand mammifère du monde ?",salt:"B7",hashes:["0763A66","0G3ONI1"],answer:"La baleine bleue"},
- {question:"Combien de cordes a une guitare classique ?",salt:"B8",hashes:["1ME7IGL"],answer:"6"},
- {question:"Dans quel pays se trouve Hollywood ?",salt:"B9",hashes:["0B9CMCF","0OZZOSV","0E6KS0N"],answer:"Les États-Unis"},
- {question:"Combien font 7 × 8 ?",salt:"B10",hashes:["0AP38QR"],answer:"56"},
- {question:"Quelle est la capitale de l’Espagne ?",salt:"B11",hashes:["05SNH98"],answer:"Madrid"}
-];
-const SPRINT_META=[
- {question:"Combien de couleurs dans l’arc-en-ciel ?",salt:"S0",hashes:["0AZQDU3"],answer:"7"},
- {question:"Quel titre porte souvent le lion ?",salt:"S1",hashes:["0OZCLN9","0FD5RAE"],answer:"Le roi de la jungle"},
- {question:"Combien de saisons compte une année ?",salt:"S2",hashes:["0GIG3W0"],answer:"4"},
- {question:"Quel est le monument le plus visité de Paris ?",salt:"S3",hashes:["17QD86B","0EKAPJ2"],answer:"La tour Eiffel"},
- {question:"Quelle est l’étoile la plus proche de la Terre ?",salt:"S4",hashes:["13FCGAR","1DPDV6Y"],answer:"Le Soleil"},
- {question:"Quel est le chiffre romain pour 10 ?",salt:"S5",hashes:["18BM6DL"],answer:"X"},
- {question:"Quel instrument a 88 touches ?",salt:"S6",hashes:["1BAT40A","1V2H5B1"],answer:"Le piano"},
- {question:"De quel pays vient la pizza ?",salt:"S7",hashes:["0XX9M4Q","0GKPIK7"],answer:"L’Italie"},
- {question:"Combien de pattes a une pieuvre ?",salt:"S8",hashes:["035I2LM"],answer:"8"},
- {question:"Combien de lettres compte l’alphabet français ?",salt:"S9",hashes:["08F0317"],answer:"26"},
- {question:"Combien de mois comptent 31 jours ?",salt:"S10",hashes:["1CATDXY"],answer:"7"},
- {question:"Quelle est la plus grosse planète du système solaire ?",salt:"S11",hashes:["0YBBKTX"],answer:"Jupiter"}
-];
+const BONUS_META=[{"question":"Quel est le livre le plus long de la Bible ?","salt":"BJ0","hashes":["1NGOBYP","00PMVU3","0D863YW"],"answer":"Psaumes"},{"question":"Quel fils de David est resté célèbre pour sa sagesse ?","salt":"BJ1","hashes":["0XVOY71","04CKCQZ"],"answer":"Salomon"},{"question":"Quel prophète a été emporté dans une tempête, après l’apparition d’un char de feu ?","salt":"BJ2","hashes":["1I5328K"],"answer":"Élie"},{"question":"Quel fils de Jacob, vendu par ses frères, est devenu administrateur en Égypte ?","salt":"BJ3","hashes":["1AR7M0L"],"answer":"Joseph"},{"question":"Combien de plaies ont frappé l’Égypte ?","salt":"BJ4","hashes":["1M1LPJO","11LAOGI"],"answer":"10"},{"question":"Comment s’appelait la femme d’Abraham ?","salt":"BJ5","hashes":["1C490ZD","0VI1M8Z","0V820K0"],"answer":"Sara"},{"question":"Quelle mer le peuple d’Israël a-t-il traversée à pied sec ?","salt":"BJ6","hashes":["0TLLKKJ","117ORUF"],"answer":"mer Rouge"},{"question":"Quel chef des collecteurs d’impôts est monté dans un sycomore pour voir Jésus ?","salt":"BJ7","hashes":["1S4KMJM"],"answer":"Zachée"},{"question":"Sur le chemin de quelle ville Saul (Paul) a-t-il été aveuglé par une lumière du ciel ?","salt":"BJ8","hashes":["1CN15H1"],"answer":"Damas"},{"question":"Comment appelle-t-on la prière enseignée par Jésus en Matthieu 6:9-13 ?","salt":"BJ9","hashes":["12BVLQN","0WTSSB6"],"answer":"prière modèle"},{"question":"Combien de jours Jésus a-t-il jeûné dans le désert ?","salt":"BJ10","hashes":["002IRQC","1KMD24D"],"answer":"40"},{"question":"Qui a succédé à Moïse pour conduire le peuple dans le pays promis ?","salt":"BJ11","hashes":["05A9211"],"answer":"Josué"}];
+const SPRINT_META=[{"question":"Qui a construit l’arche ?","salt":"SJ0","hashes":["1GX5Z6Y"],"answer":"Noé"},{"question":"Combien de commandements Jéhovah a-t-il donnés à Moïse sur des tablettes de pierre ?","salt":"SJ1","hashes":["0Z3D8C4","1WC7T2Q"],"answer":"10"},{"question":"Quel est le premier livre de la Bible ?","salt":"SJ2","hashes":["0SNK4XR"],"answer":"Genèse"},{"question":"Comment s’appelle la mère de Jésus ?","salt":"SJ3","hashes":["1D77R6J"],"answer":"Marie"},{"question":"Quel géant David a-t-il vaincu ?","salt":"SJ4","hashes":["0GTS4GW"],"answer":"Goliath"},{"question":"Quel animal parle à Ève dans le jardin ?","salt":"SJ5","hashes":["0AFOZW0"],"answer":"serpent"},{"question":"Combien de pains Jésus a-t-il utilisés pour nourrir la foule ?","salt":"SJ6","hashes":["1V1RXHX","00UFSO3"],"answer":"5"},{"question":"Dans quel jardin vivaient Adam et Ève ?","salt":"SJ7","hashes":["1QOYLZ5","1GW036Z"],"answer":"Éden"},{"question":"Quel homme très fort tirait sa force de ses cheveux ?","salt":"SJ8","hashes":["0GH1SJT"],"answer":"Samson"},{"question":"Qui a été avalé par un énorme poisson ?","salt":"SJ9","hashes":["0NQ7VMO"],"answer":"Jonas"},{"question":"Quel est le nom de Dieu ?","salt":"SJ10","hashes":["0C1WJKI"],"answer":"Jéhovah"},{"question":"Quel apôtre était collecteur d’impôts avant de suivre Jésus ?","salt":"SJ11","hashes":["0GWIL4T","0Z300LG"],"answer":"Matthieu"}];
 const LENGTH_HINTS={12:"Le parcours classique : un défi, un fragment.",24:"Un bonus réservé au parent s’ajoute à chaque étape.",36:"En plus du bonus, un duel de rapidité départage qui répond le plus vite."};
 const SPRINT_DISCLAIMER="Ce n’est pas un chronomètre de compétition : en cas de réponses très rapprochées, le classement peut ne pas être parfaitement exact. L’important, c’est de s’amuser !";
 const REWARDS=[
@@ -383,10 +311,10 @@ function isDevMode(){return localStorage.getItem(DEV_MODE_KEY)==="1"}
 const STORE_KEY="decodeMoiStoreV5";
 const LEGACY_KEYS=["decodeMoiV3","decodeMoiV2","decodeMoiV1","relaisSecretV1","coffret12V2"];
 const emptyProfile=()=>({localAnswers:{},attempts:{},hints:{}});
-const FINAL_CODE_LETTERS=["R","E","A","N","M","E","O","L","T","U","E","R"];
-const FINAL_CODE_WORD="AMOURETERNEL";
-const FINAL_CODE_DISPLAY="AMOUR ÉTERNEL";
-const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},childJoined:false,finalRiddlesSolved:false,levelsMode:12,bonusCompleted:Array(FRAGMENT_COUNT).fill(false),sprintAnswers:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
+const FINAL_CODE_LETTERS=["M","U","E","O","D","T","R","I","A","S","U","E"];
+const FINAL_CODE_WORD="DIEUESTAMOUR";
+const FINAL_CODE_DISPLAY="DIEU EST AMOUR";
+const defaultState={created:false,team:"",teen:"",parentName:"",room:"",activeRole:"teen",completed:Array(LEVELS.length).fill(false),parentAnswers:{},rewards:{},teenLastSeen:0,parentLastSeen:0,sharedAnswers:{},timerStarts:{},togetherUnlocked:{},childJoined:false,finalRiddlesSolved:false,levelsMode:12,niveau:"junior",bonusCompleted:Array(FRAGMENT_COUNT).fill(false),sprintAnswers:{},profileData:{parent:emptyProfile(),teen:emptyProfile()}};
 
 function normalizeCompleted(values){
  const result=Array(LEVELS.length).fill(false);
@@ -411,6 +339,7 @@ function sanitizeGame(x={}){
  game.childJoined=Boolean(x.childJoined);
  game.finalRiddlesSolved=Boolean(x.finalRiddlesSolved);
  game.levelsMode=[12,24,36].includes(Number(x.levelsMode))?Number(x.levelsMode):12;
+ game.niveau=["enfant","junior","ado"].includes(x.niveau)?x.niveau:"junior";
  game.bonusCompleted=normalizeBoolArrayN(x.bonusCompleted,FRAGMENT_COUNT);
  game.sprintAnswers={...(x.sprintAnswers||{})};
  game.activeRole=x.activeRole==="parent"?"parent":"teen";
@@ -624,7 +553,17 @@ function openCreateModal(){
   </div>
   <p class="muted" id="lengthHint" style="margin-top:8px;font-size:13px">${esc(LENGTH_HINTS[12])}</p>
  </div>
+ <div class="field"><label>Niveau des énigmes du jeune</label>
+  <div class="action-row" id="niveauPicker" data-selected="junior">
+   ${Object.entries(NIVEAUX).map(([k,v])=>`<button type="button" class="${k==="junior"?"primary":"secondary"}" data-niveau="${k}">${v}</button>`).join("")}
+  </div>
+  <p class="muted" style="margin-top:8px;font-size:13px">Les énigmes du parent restent de niveau adulte.</p>
+ </div>
  <button class="primary" id="confirmCreate">Créer</button>`);
+ document.querySelectorAll("#niveauPicker [data-niveau]").forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll("#niveauPicker [data-niveau]").forEach(b=>b.className=b===btn?"primary":"secondary");
+  document.getElementById("niveauPicker").dataset.selected=btn.dataset.niveau
+ });
  document.querySelectorAll("#lengthPicker [data-length]").forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll("#lengthPicker [data-length]").forEach(b=>b.className=b===btn?"primary":"secondary");
   document.getElementById("lengthPicker").dataset.selected=btn.dataset.length;
@@ -659,8 +598,9 @@ let configCache={};
 function loadConfig(){
  return fetch("/api/config").then(r=>r.ok?r.json():{}).then(c=>{configCache=c||{}}).catch(()=>{})
 }
+const DEV_CODE_KEY="decodeMoiDevCode";
 function devFetch(url,opts={}){
- return fetch(url,{...opts,headers:{...(opts.headers||{}),"x-dev-code":"1397"}})
+ return fetch(url,{...opts,headers:{...(opts.headers||{}),"x-dev-code":localStorage.getItem(DEV_CODE_KEY)||""}})
 }
 function tutorialHtml(){
  const body=configCache.tutorial||DEFAULT_TUTORIAL_BODY;
@@ -857,13 +797,16 @@ document.getElementById("createBtn").onclick=openCreateModal;
 document.getElementById("manageBtn").onclick=openGameManager;
 (function(){
  document.getElementById("deeKreationsTap").addEventListener("click",()=>{
+  if(isDevMode()){localStorage.removeItem(DEV_MODE_KEY);localStorage.removeItem(DEV_CODE_KEY);alert("Mode développeur désactivé.");if(state.created)renderMain();return}
   const code=prompt("Code :");
   if(code===null)return;
-  if(code.trim()!=="1397"){alert("Code incorrect.");return}
-  const nowOn=!isDevMode();
-  if(nowOn)localStorage.setItem(DEV_MODE_KEY,"1");else localStorage.removeItem(DEV_MODE_KEY);
-  alert(nowOn?"🛠️ Mode développeur activé.":"Mode développeur désactivé.");
-  if(state.created)renderMain()
+  // Le code est vérifié par le serveur : il n'est écrit nulle part dans la page.
+  fetch("/api/reports",{headers:{"x-dev-code":code.trim()}}).then(r=>{
+   if(!r.ok){alert("Code incorrect.");return}
+   localStorage.setItem(DEV_CODE_KEY,code.trim());localStorage.setItem(DEV_MODE_KEY,"1");
+   alert("🛠️ Mode développeur activé.");
+   if(state.created)renderMain()
+  }).catch(()=>alert("Vérification impossible sans connexion."))
  })
 })();
 document.getElementById("progressCard").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();e.target.click()}});
@@ -872,11 +815,11 @@ document.addEventListener("click",e=>{
   const team=document.getElementById("newTeam").value.trim(),teen=document.getElementById("newTeen").value.trim(),parent=document.getElementById("newParent").value.trim();
   if(!team||!teen||!parent){feedback("Complète les trois champs.","error");return}
   const levelsMode=Number(document.getElementById("lengthPicker")?.dataset.selected)||12;
-  state=structuredClone(defaultState);state.created=true;state.team=team;state.teen=teen;state.parentName=parent;state.activeRole="teen";state.room=randomRoom();state.parentLastSeen=Date.now();state.levelsMode=levelsMode;save();closeModal();showMain();openInviteChild()
+  state=structuredClone(defaultState);state.created=true;state.team=team;state.teen=teen;state.parentName=parent;state.activeRole="teen";state.room=randomRoom();state.parentLastSeen=Date.now();state.levelsMode=levelsMode;state.niveau=document.getElementById("niveauPicker")?.dataset.selected||"junior";save();closeModal();showMain();openInviteChild()
  }
 });
 document.getElementById("joinBtn").onclick=showParent;document.getElementById("backHomeBtn").onclick=showHome;
-function coffretJoinLink(){return appLink("join="+encodeInvite({team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,levelsMode:state.levelsMode}))}
+function coffretJoinLink(){return appLink("join="+encodeInvite({team:state.team,teen:state.teen,parentName:state.parentName,room:state.room,levelsMode:state.levelsMode,niveau:state.niveau}))}
 function openInviteChild(){
  openModal("Coffret créé","Étape suivante",`<p>Envoyez ce lien à <strong>${esc(state.teen)}</strong> : en l’ouvrant sur son téléphone, le coffret s’installe automatiquement, prêt à jouer.</p>
  <div class="code-box">${esc(coffretJoinLink())}</div>
@@ -984,7 +927,7 @@ function renderLevels(){
   grid.appendChild(btn)
  })
 }
-function finalRevealMessage(){return `Regardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.`}
+function finalRevealMessage(){return `« Dieu est amour » (1 Jean 4:8). Regardez la personne à côté de vous : c’est un cadeau de Jéhovah. Prenez soin l’un de l’autre.`}
 function completeLevel(i){
  if(state.completed[i]){feedback("Ce défi est déjà validé.","success");return}
  const before=state.completed.filter(Boolean).length;
@@ -1017,7 +960,7 @@ async function shareAppFile(){
 }
 
 
-function normalize(v){return String(v||"").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ")}
+function normalize(v){return String(v||"").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[’'`\-.,!?;:]/g," ").replace(/\s+/g," ").trim().replace(/^(LE|LA|LES|L|UN|UNE|DES|DU|D) /,"")}
 function matchesAnswer(meta,value){return meta.hashes.includes(hash(meta.salt+"|"+normalize(value)))}
 function personalHintBlock(i,hintText){
  const h=roleData().hints[i];
@@ -1037,7 +980,7 @@ function sharedPromptBlock(i,mineVal,otherVal,otherName){
  return `<hr><div class="notice"><strong>💬 Petit à-côté (facultatif) :</strong> ${esc(sp.question)}</div><div class="field"><label for="sharedAnswerInput">Ta réponse</label><textarea id="sharedAnswerInput" placeholder="Juste pour vous deux, ça n’empêche pas de valider le niveau"></textarea></div><button class="secondary" id="submitSharedAnswer">Envoyer ma réponse</button>`
 }
 function devAnswerHint(answer){return isDevMode()&&answer?`<p class="muted" style="font-size:.8rem">🛠️ Mode dev — réponse : ${esc(answer)}</p>`:""}
-function remoteLevel(i){const m=REMOTE_META[i],sa=state.sharedAnswers[i]||{};return `<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>${sharedPromptBlock(i,sa.teen,sa.parent,state.parentName||"le parent")}`}
+function remoteLevel(i){const m=remoteMeta(i),sa=state.sharedAnswers[i]||{};return `<p>${esc(m.question)}</p>${devAnswerHint(m.answer)}<div class="field"><label for="remoteAnswer">Réponse</label><input id="remoteAnswer"></div><button class="secondary" id="checkRemote">Vérifier</button>${personalHintBlock(i,m.hint)}<div id="researchTogether" class="searchbox ${(roleData().attempts[i]||0)>=2&&roleData().hints[i]?"":"hidden"}"><strong>Recherche ensemble obligatoire</strong><p>${esc(m.research)}</p><p>Le téléphone peut être utilisé pour la recherche, avec le jeune et le parent réunis.</p></div>${relayInput(i)}<button class="primary" id="validateLevel">Valider le niveau</button>${sharedPromptBlock(i,sa.teen,sa.parent,state.parentName||"le parent")}`}
 function togetherGate(i,activityHtml){
  const t=TOGETHER_META[i];
  if(!t||(state.togetherUnlocked&&state.togetherUnlocked[i]))return activityHtml;
@@ -1141,21 +1084,19 @@ function openLevel(i){
  bindLevel(i,isParentView)
 }
 function level1(){return remoteLevel(0)}
-function level2(){return togetherGate(1,`<p>Construisez ensemble la plus haute tour possible avec dix objets.</p><div class="offline"><strong>📵 Sans téléphone pendant 5 minutes.</strong><p>Choisissez les objets, lancez le chrono, posez les téléphones et construisez.</p><button class="secondary" id="startTimer">Lancer 5 minutes</button><div class="timer hidden" id="timer">05:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
+function level2(){return togetherGate(1,`<p>Construisez ensemble la plus haute tour possible avec dix objets de la maison. Ensuite, lisez ensemble le récit de la tour de Babel (Genèse 11:1-9).</p><div class="offline"><strong>📵 Sans téléphone pendant 5 minutes.</strong><p>Choisissez les objets, lancez le chrono, posez les téléphones et construisez.</p><button class="secondary" id="startTimer">Lancer 5 minutes</button><div class="timer hidden" id="timer">05:00</div><div id="timerDone" class="success hidden">Temps écoulé.</div></div><p class="muted">Pour en parler : pourquoi Jéhovah a-t-il arrêté cette construction ? Qu’est-ce qui rend notre famille forte quand nous sommes unis ?</p><button class="primary" id="validateLevel">Valider</button>`)}
 function level3(){return remoteLevel(2)}
-function level4(){return togetherGate(3,`<p>Trouvez ensemble cinq objets : un doux, un lourd, un coloré, un utile et un drôle.</p><div class="offline"><strong>📵 7 minutes sans téléphone.</strong><p>À la fin, chacun explique seulement un choix.</p><button class="secondary" id="startTimer">Lancer 7 minutes</button><div class="timer hidden" id="timer">07:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
+function level4(){return togetherGate(3,`<p>Trouvez ensemble cinq objets qui représentent chacun une chose pour laquelle vous voulez remercier Jéhovah (une personne, un moment, une qualité…).</p><div class="offline"><strong>📵 7 minutes sans téléphone.</strong><p>À la fin, chacun explique un de ses choix, puis l’un de vous fait une courte prière pour remercier Jéhovah.</p><button class="secondary" id="startTimer">Lancer 7 minutes</button><div class="timer hidden" id="timer">07:00</div><div id="timerDone" class="success hidden">Temps écoulé.</div></div><p class="muted">« Exprimez votre reconnaissance pour tout. » (1 Thessaloniciens 5:18)</p><button class="primary" id="validateLevel">Valider</button>`)}
 function level5(){return remoteLevel(4)}
-function level6(){return togetherGate(5,`<p>Construisez un pont entre deux livres avec seulement deux feuilles de papier, du ruban adhésif et un petit objet à faire traverser.</p><div class="offline"><strong>📵 Sans téléphone pendant dix minutes.</strong><p>Lancez le chrono ensemble, posez les téléphones et construisez.</p><button class="secondary" id="startTimer">Lancer 10 minutes</button><div class="timer hidden" id="timer">10:00</div><div id="timerDone" class="success hidden">Défi terminé.</div></div><div class="field"><label for="bridgeResult">Résultat</label><select id="bridgeResult"><option value="">Choisir…</option><option>Le pont a tenu</option><option>Le pont a presque tenu</option><option>Nous avons essayé plusieurs solutions</option></select></div><button class="primary" id="validateLevel">Valider</button>`)}
+function level6(){return togetherGate(5,`<p>Lisez ensemble l’illustration de la maison construite sur le roc (Matthieu 7:24-27). Puis construisez une petite maison avec des cartes, des livres ou des briques, assez solide pour résister quand on souffle dessus.</p><div class="offline"><strong>📵 Sans téléphone pendant dix minutes.</strong><p>Lancez le chrono ensemble, posez les téléphones et construisez.</p><button class="secondary" id="startTimer">Lancer 10 minutes</button><div class="timer hidden" id="timer">10:00</div><div id="timerDone" class="success hidden">Temps écoulé.</div></div><div class="field"><label for="bridgeResult">Résultat</label><select id="bridgeResult"><option value="">Choisir…</option><option>La maison a tenu</option><option>La maison a presque tenu</option><option>Nous avons essayé plusieurs solutions</option></select></div><p class="muted">Pour en parler : comment mettre en pratique les paroles de Jésus cette semaine ?</p><button class="primary" id="validateLevel">Valider</button>`)}
 function level7(){return remoteLevel(6)}
-function level8(){return togetherGate(7,`<p>Préparez ensemble une boisson ou un goûter simple, puis partagez-le.</p><div class="offline"><strong>📵 15 minutes sans téléphone.</strong><p>Le choix doit être réaliste et réalisable avec ce qui est disponible.</p><button class="secondary" id="startTimer">Lancer 15 minutes</button><div class="timer hidden" id="timer">15:00</div><div id="timerDone" class="success hidden">Moment terminé.</div></div><button class="primary" id="validateLevel">Valider</button>`)}
+function level8(){return togetherGate(7,`<p>Préparez ensemble une boisson ou un goûter simple. Avant de le partager, l’un de vous fait une courte prière pour remercier Jéhovah pour ce repas.</p><div class="offline"><strong>📵 15 minutes sans téléphone.</strong><p>Le choix doit être réaliste et réalisable avec ce qui est disponible.</p><button class="secondary" id="startTimer">Lancer 15 minutes</button><div class="timer hidden" id="timer">15:00</div><div id="timerDone" class="success hidden">Temps écoulé.</div></div><p class="muted">« Priez constamment. » (1 Thessaloniciens 5:17)</p><button class="primary" id="validateLevel">Valider</button>`)}
 function level9(){return remoteLevel(8)}
-function level10(){return togetherGate(9,`<p>Faites une sortie de 20 à 45 minutes avec la mère, le père ou les deux parents.</p><div class="offline"><strong>Téléphones rangés pour tout le monde.</strong></div><p>Retrouvez quelque chose de rouge, un mot de plus de huit lettres et un objet dont vous ignorez l’utilité.</p><div class="field"><label for="miniTrip">Quel objet vous a le plus intrigués ?</label><input id="miniTrip" maxlength="100"></div><button class="primary" id="validateLevel">Valider</button>`)}
+function level10(){return togetherGate(9,`<p>Faites une sortie de 20 à 45 minutes ensemble.</p><div class="offline"><strong>Téléphones rangés pour tout le monde.</strong></div><p>Retrouvez trois merveilles de la création : une plante, un animal (même tout petit) et quelque chose dans le ciel. Lisez ensuite Genèse 1:31 : « Dieu regarda tout ce qu’il avait fait et vit que c’était très bon. »</p><div class="field"><label for="miniTrip">Qu’est-ce qui vous a le plus émerveillés ?</label><input id="miniTrip" maxlength="100"></div><button class="primary" id="validateLevel">Valider</button>`)}
 function level11(){return remoteLevel(10)}
 function riddlesRecapHtml(){
  return `<details style="margin-top:14px"><summary class="muted" style="cursor:pointer">Revoir les énigmes</summary>
- <p style="margin-top:10px">1. Combien de côtés possède un hexagone ?</p>${devAnswerHint(FINAL_META[0].answer)}
- <p>2. Quelle est la première lettre du mot « équipe » ?</p>${devAnswerHint(FINAL_META[1].answer)}
- <p>3. Quel est le contraire de « dehors » ?</p>${devAnswerHint(FINAL_META[2].answer)}
+ ${FINAL_QUESTIONS.map((fq,n)=>`<p${n===0?' style="margin-top:10px"':''}>${n+1}. ${esc(fq[0])}</p>${devAnswerHint(FINAL_META[n].answer)}`).join("")}
  </details>`
 }
 function level12(){
@@ -1164,7 +1105,7 @@ function level12(){
   return `<div class="success"><strong>🔓 Le coffre est déjà ouvert !</strong></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
   <p>« ${esc(FINAL_CODE_DISPLAY)} »</p>
-  <p class="muted">Regardez la personne à côté de vous. C’est votre plus beau trésor. Prenez soin l’un de l’autre.</p>
+  <p class="muted">« Dieu est amour » (1 Jean 4:8). Regardez la personne à côté de vous : c’est un cadeau de Jéhovah. Prenez soin l’un de l’autre.</p>
   ${isDevMode()?`<button class="secondary" id="devReplayLock" style="margin-top:10px">🛠️ Rejouer l’animation (mode dev)</button>`:""}
   ${riddlesRecapHtml()}`
  }
@@ -1172,15 +1113,13 @@ function level12(){
  if(!state.finalRiddlesSolved){
   return `${lockHeader}<p>Résolvez ensemble les trois dernières énigmes : elles révèlent le dernier élément du code final et donnent accès à l’espace pour l’assembler.</p>
   <div class="notice">Chaque joueur peut proposer une réponse. Une recherche commune reste autorisée après l’utilisation d’un indice.</div>
-  <div class="field"><label for="finalOne">1. Combien de côtés possède un hexagone ?</label><input id="finalOne" inputmode="numeric"></div>${devAnswerHint(FINAL_META[0].answer)}
-  <div class="field"><label for="finalTwo">2. Quelle est la première lettre du mot « équipe » ?</label><input id="finalTwo" maxlength="2"></div>${devAnswerHint(FINAL_META[1].answer)}
-  <div class="field"><label for="finalThree">3. Quel est le contraire de « dehors » ?</label><input id="finalThree" maxlength="20"></div>${devAnswerHint(FINAL_META[2].answer)}
+  ${["finalOne","finalTwo","finalThree"].map((id,n)=>`<div class="field"><label for="${id}">${n+1}. ${esc(FINAL_QUESTIONS[n][0])}</label><input id="${id}" maxlength="${FINAL_QUESTIONS[n][2]}"${FINAL_QUESTIONS[n][1]?' inputmode="numeric"':''}></div>${devAnswerHint(FINAL_META[n].answer)}`).join("")}
   <button class="primary" id="checkFinalRiddles">Vérifier</button>`
  }
  const tiles=FINAL_CODE_LETTERS.map((ch,p)=>{const found=letterFoundAt(p);return `<div class="code-tile ${found?"found":""}">${found?esc(ch):"?"}</div>`}).join("");
- return `${lockHeader}<p>Le dernier élément du code final est révélé ! Remettez les lettres dans le bon ordre, ensemble, pour trouver le mot complet et ouvrir le coffre.</p>
+ return `${lockHeader}<p>Le dernier élément du code final est révélé ! Remettez les lettres dans le bon ordre, ensemble, pour trouver le message caché et ouvrir le coffre.</p>
  <div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0">${tiles}</div>
- <div class="field"><label for="finalWord">Le mot complet (deux mots)</label><input id="finalWord" maxlength="24"></div>${devAnswerHint(FINAL_CODE_DISPLAY)}
+ <div class="field"><label for="finalWord">Le message complet (trois mots)</label><input id="finalWord" maxlength="24"></div>${devAnswerHint(FINAL_CODE_DISPLAY)}
  <div class="offline"><strong>Finale ensemble :</strong> une fois le coffre ouvert, choisissez la dernière récompense et fixez sa date.</div>
  <button class="primary" id="validateLevel">Ouvrir le coffre</button>
  ${riddlesRecapHtml()}`
@@ -1258,7 +1197,7 @@ function bindLevel(i,isParentView){
    if(submitSharedP)submitSharedP.onclick=()=>{const val=document.getElementById("sharedAnswerInput").value.trim();if(!val){feedback("Écris une réponse (ou laisse tomber pour cette fois).","error");return}state.sharedAnswers[i]=state.sharedAnswers[i]||{};state.sharedAnswers[i].parent=val;state.parentLastSeen=Date.now();save();openLevel(i)};
    return
   }
-  document.getElementById("checkRemote").onclick=()=>{const ok=matchesAnswer(REMOTE_META[i],document.getElementById("remoteAnswer").value);if(ok){roleData().localAnswers["remoteCorrect"+i]=true;save();feedback("Bonne réponse. Il reste à valider le relais.")}else{roleData().attempts[i]=(roleData().attempts[i]||0)+1;save();const gate=document.getElementById("personalGate");if(gate)gate.classList.remove("hidden");if(roleData().attempts[i]>=2&&roleData().hints[i])document.getElementById("researchTogether").classList.remove("hidden");feedback(roleData().attempts[i]===1?"Réponse incorrecte. Un indice peut être débloqué.":"Toujours incorrect. La recherche doit maintenant être faite ensemble.","error")}};
+  document.getElementById("checkRemote").onclick=()=>{const ok=matchesAnswer(remoteMeta(i),document.getElementById("remoteAnswer").value);if(ok){roleData().localAnswers["remoteCorrect"+i]=true;save();feedback("Bonne réponse. Il reste à valider le relais.")}else{roleData().attempts[i]=(roleData().attempts[i]||0)+1;save();const gate=document.getElementById("personalGate");if(gate)gate.classList.remove("hidden");if(roleData().attempts[i]>=2&&roleData().hints[i])document.getElementById("researchTogether").classList.remove("hidden");feedback(roleData().attempts[i]===1?"Réponse incorrecte. Un indice peut être débloqué.":"Toujours incorrect. La recherche doit maintenant être faite ensemble.","error")}};
   const submitSharedT=document.getElementById("submitSharedAnswer");
   if(submitSharedT)submitSharedT.onclick=()=>{const val=document.getElementById("sharedAnswerInput").value.trim();if(!val){feedback("Écris une réponse (ou laisse tomber pour cette fois).","error");return}state.sharedAnswers[i]=state.sharedAnswers[i]||{};state.sharedAnswers[i].teen=val;save();openLevel(i)};
  }
@@ -1287,7 +1226,7 @@ function bindLevel(i,isParentView){
  const validateBtn=document.getElementById("validateLevel");
  if(validateBtn)validateBtn.onclick=()=>{
   if(LEVELS[i].mode==="remote"){
-   const correct=matchesAnswer(REMOTE_META[i],document.getElementById("remoteAnswer").value)||roleData().localAnswers["remoteCorrect"+i];
+   const correct=matchesAnswer(remoteMeta(i),document.getElementById("remoteAnswer").value)||roleData().localAnswers["remoteCorrect"+i];
    if(!correct){feedback("La réponse principale doit être correcte.","error");return}
    if(!state.parentAnswers[i]){feedback("Il manque encore la réponse du parent. Touche « Vérifier maintenant » après qu’il ait répondu.","error");return}
    completeLevel(i);return
@@ -1295,12 +1234,12 @@ function bindLevel(i,isParentView){
   if(i===1&&timerNotDone(1,5)){feedback("Terminez d’abord les cinq minutes sans téléphone.","error");return}
   if(i===3&&timerNotDone(3,7)){feedback("Terminez d’abord les sept minutes sans téléphone.","error");return}
   if(i===5&&timerNotDone(5,10)){feedback("Terminez d’abord les dix minutes sans téléphone.","error");return}
-  if(i===5&&!document.getElementById("bridgeResult").value){feedback("Sélectionnez le résultat du pont.","error");return}
+  if(i===5&&!document.getElementById("bridgeResult").value){feedback("Sélectionnez le résultat de la maison.","error");return}
   if(i===7&&timerNotDone(7,15)){feedback("Terminez d’abord les quinze minutes sans téléphone.","error");return}
-  if(i===9&&!document.getElementById("miniTrip").value.trim()){feedback("Indiquez l’objet qui vous a intrigués.","error");return}
+  if(i===9&&!document.getElementById("miniTrip").value.trim()){feedback("Indiquez ce qui vous a émerveillés.","error");return}
   if(i===11){
    const val=normalize(document.getElementById("finalWord").value).replace(/\s+/g,"");
-   if(val!==FINAL_CODE_WORD){feedback("Ce n’est pas encore le bon mot, réessayez ensemble.","error");return}
+   if(val!==FINAL_CODE_WORD){feedback("Ce n’est pas encore le bon message, réessayez ensemble.","error");return}
    completeLevel(i);playLockOpenAnimation(finalRevealMessage());return
   }
   completeLevel(i)
@@ -1381,11 +1320,13 @@ document.getElementById("rulesBtn").onclick=()=>openModal("Règles de Décode-Mo
 <p><strong>Décode-Moi</strong> est un parcours évolutif : de nouveaux niveaux pourront être ajoutés sans changer le nom du jeu.</p>
 <p>Les niveaux se débloquent uniquement dans l’ordre. Aucune date n’est imposée.</p>
 <p>Un relais alterne avec une activité à réaliser ensemble.</p>
-<p>Les énigmes mélangent logique, français, mathématiques, sciences, culture générale et mini escape game.</p>
-<p>Après une première erreur, le jeune ou le parent peut obtenir un indice en répondant à une question sur un souvenir, une peur, un rêve, un regret ou un secret léger.</p>
+<p>Les énigmes portent sur la Bible : la création, Noé, David, Jonas, Daniel, les illustrations de Jésus… Les activités ensemble invitent à lire un passage, à remercier Jéhovah et à prier ensemble. Elles peuvent trouver leur place pendant votre culte familial.</p>
+<p>À la création du coffret, on choisit le niveau des énigmes du jeune : enfant (6-9 ans), junior (10-13 ans) ou ado et adulte. Les énigmes du parent sont de niveau adulte.</p>
+<p>Après une première erreur, le jeune ou le parent peut obtenir un indice en répondant à une question sur un souvenir, un merci, une prière, un rêve, la Bible ou le pardon.</p>
 <p>Le mot JOKER est toujours accepté. Aucun secret grave, traumatisme ou information dangereuse ne doit être demandé.</p>
 <p>Si la réponse reste introuvable après l’indice, la recherche doit être faite ensemble.</p>
 <p>Les activités et récompenses sans téléphone appliquent la même règle au jeune et aux adultes.</p>
+<p>Les citations et les noms suivent la Traduction du monde nouveau des Saintes Écritures (édition révisée), disponible gratuitement sur jw.org.</p>
 <p>Une récompense débloquée ne doit pas être retirée ensuite comme sanction.</p><p>Sur un appareil partagé, le profil choisi sépare les essais et les indices tout en conservant la progression commune.</p>
 <p>À la création du coffret, on choisit la longueur du parcours : 12 défis (le parcours classique), 24 (avec un défi bonus réservé au parent à chaque étape) ou 36 (avec en plus un duel de rapidité). ${esc(SPRINT_DISCLAIMER)}</p>
 <hr><button class="danger" id="resetGame">Supprimer cette partie de cet appareil</button>`);
